@@ -1,6 +1,6 @@
-import numpy as np;
-import torch;
-from typing     import List;
+import  numpy       as np;
+import  torch;
+from    typing      import List;
 
 from Network    import  Neural_Network;
 from Loss       import  Data_Loss, Coll_Loss, Lp_Loss, L0_Approx_Loss;

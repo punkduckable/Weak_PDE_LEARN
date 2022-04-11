@@ -2,6 +2,11 @@ class Read_Error(Exception):
     # Raised if we can't find a Phrase in a File.
     pass;
 
+class End_Of_File_Error(Exception):
+    # Raised if we reach the end of a file.
+    pass;
+
+
 
 
 def Index_After_Phrase(
@@ -31,6 +36,11 @@ def Index_After_Phrase(
     # First, get the number of characters in Line/Phrase.
     Num_Chars_Line   : int = len(Line_In);
     Num_Chars_Phrase : int = len(Phrase_In);
+
+    # If Phrase_In is an empty string, then we have a match. In particular,
+    # 0 character of Line_In is the first character after "".
+    if(Num_Chars_Phrase == 0):
+        return 0;
 
     # If we're ignoring case, then map Phrase, Line to lower case versions of
     # themselves. Note: We don't want to modify the original variables. Since
@@ -112,11 +122,12 @@ def Read_Line_After(
         # Get the next line
         Line = File.readline();
 
-        # Python doesn't use end of file characters. However, readline will
-        # retun an empty string if and only if we're at the end of File. Thus,
-        # we can use this as our "end of file" check
+        # Check if we've reached the end of file. Python doesn't use end of file
+        # characters. However, readline will retun an empty string if and only
+        # if we're at the end of File. Thus, we can use this as our "end of
+        # file" check
         if(Line == ""):
-            raise Read_Error("Could not find \"" + Phrase + "\" in File.");
+            raise End_Of_File_Error("Reached end of file, could not find \"" + Phrase + "\"");
 
         # If the line is a comment, then ignore it.
         if (Line[0] == Comment_Char):

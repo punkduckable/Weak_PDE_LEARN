@@ -1,1 +1,53 @@
-# To do :D 
+# This file defines the PDE that we search for. Weak PDE-LEARN can identify
+# PDEs of the following form:
+#     D^{(0)} F_0(U) = c_1 D^{(1)} F_1(U) + ... + c_K D^{(K)} F_K(U)
+# Here, U is the PDE solution (which depends on (t, x), (t, x, y), or
+# (t, x, y, z)) depending on the number of PDE terms. F_0, ... , F_K are scalar
+# valued functions of U (NOT its derivatives). We call these "Trial functions".
+#  D^{(0)}, ... , D^{(K)} are partial derivative operators. We call terms of the
+# form D^{(i)} F_i(U) a "Library term". We call the term D^{(0)} F_0(U) the
+# "Right Hand Side Term" or "RHS Term" for short, and the terms D^{(i)} F_i(U),
+# for i >= 1, the "Left Hand Side Terms" or "LHS Terms" for short.
+#
+# This file specifies Library terms. Since the RHS Term has a special
+# designation, we specify it separately. Each trial function must be a power
+# of U (I may weaken this requirement in the future). We can recognize
+# expressions of the form U^p, as well as multiplicative products of U, such as
+# U*U. For example, the following examples all mean "U^3":
+#       U^3
+#       U^2*U
+#       U*U^2
+#       U*U*U
+# Derivatives must be expressed as a sequence of partial derivatives. Each
+# partial derivative should be of the form D_s (for first order derivatives) or
+# D_s^k (for higher order derivatives). There should be a space between each
+# partial derivative. For example, D_t D_x^2 D_y. The derivative should come
+# before the trial function, with a space between the two. For example, the
+# following means "second x partial and first y partial of U^4"
+#       D_x^2 D_t U^4
+# If a Library term has no derivative (D^{(i)} = 1), then you simply do not
+# list one. For example, the following line specifies the Library term U^2,
+#       U^2
+# The first library term you specify is the RHS term. There can be blank lines,
+# comments, etc between library terms. The only rules are that the library
+# terms adhere to the format above and that there is at most one library term
+# per line.
+
+# RHS Term
+D_t U
+
+# LHS Terms
+U
+D_x U
+D_x^2 U
+D_x^3 U
+
+U^2
+D_x U^2
+D_x^2 U^2
+D_x^3 U^2
+
+U^3
+D_x U^3
+D_x^2 U^3
+D_x^3 U^3

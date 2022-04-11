@@ -2,8 +2,8 @@ import numpy;
 import torch;
 import math;
 
-from Network  import    Neural_Network;
-from Evaluate_Derivatives import Evaluate_Derivatives;
+from Network                import    Neural_Network;
+from Evaluate_Derivatives   import Evaluate_Derivatives;
 
 
 
