@@ -1,11 +1,9 @@
 import numpy as np;
 import torch;
-from typing     import Tuple;
+from typing     import List;
 
 from Network    import  Neural_Network;
 from Loss       import  Data_Loss, Coll_Loss, Lp_Loss, L0_Approx_Loss;
-from Mappings   import  Col_Number_to_Multi_Index_Class, \
-                        Index_to_x_Derivatives, Index_to_xy_Derivatives_Class;
 
 
 
@@ -15,10 +13,8 @@ def Training(
         Coll_Points                         : torch.Tensor,
         Inputs                              : torch.Tensor,
         Targets                             : torch.Tensor,
-        Time_Derivative_Order               : int,
-        Highest_Order_Spatial_Derivatives   : int,
-        Index_to_Derivatives,
-        Col_Number_to_Multi_Index           : Col_Number_to_Multi_Index_Class,
+        LHS_Term                            : Library_Term,
+        RHS_Terms                           : List[Library_Term],
         p                                   : float,
         Lambda                              : float,
         Optimizer                           : torch.optim.Optimizer,
@@ -49,8 +45,11 @@ def Training(
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
-    Time_Derivative_Order: We try to solve a PDE of the form (d^n U/dt^n) =
-    N(U, D_{x}U, ...). This is the 'n' on the left-hand side of that PDE.
+    LHS_Term: The Library Term (trial functiom + derivative) that appears on
+    the left hand side of the PDE. This is generally a time derivative of U.
+
+    RHS_Terms: A list of the Library terms (trial function + derivative)
+    that appear in the right hand side of the PDE.
 
     Highest_Order_Spatial_Derivatives: The highest order spatial partial
     derivatives of U that are present in the library terms.
@@ -87,15 +86,7 @@ def Training(
             Optimizer.zero_grad();
 
         # Evaluate the Loss
-        Loss = (Coll_Loss(
-                    U                                   = U,
-                    Xi                                  = Xi,
-                    Coll_Points                         = Coll_Points,
-                    Time_Derivative_Order               = Time_Derivative_Order,
-                    Highest_Order_Spatial_Derivatives   = Highest_Order_Spatial_Derivatives,
-                    Index_to_Derivatives                = Index_to_Derivatives,
-                    Col_Number_to_Multi_Index           = Col_Number_to_Multi_Index,
-                    Device                              = Device)
+        Loss = (Weak_Form_Loss()
 
                 +
 
@@ -123,14 +114,12 @@ def Training(
 
 def Testing(
         U                                   : Neural_Network,
-        Xi                                  :  Neural_Network,
-        Coll_Points                         : torch.Tensor,
+        Xi                                  : Neural_Network,
         Inputs                              : torch.Tensor,
         Targets                             : torch.Tensor,
         Time_Derivative_Order               : int,
-        Highest_Order_Spatial_Derivatives   : int,
-        Index_to_Derivatives,
-        Col_Number_to_Multi_Index           : Col_Number_to_Multi_Index_Class,
+        LHS_Term                            : Library_Term,
+        RHS_Terms                           : List[Library_Term],
         p                                   : float,
         Lambda                              : float,
         Device                              : torch.device = torch.device('cpu')) -> Tuple[float, float]:
@@ -165,18 +154,11 @@ def Testing(
     Time_Derivative_Order: We try to solve a PDE of the form (d^n U/dt^n) =
     N(U, D_{x}U, ...). This is the 'n' on the left-hand side of that PDE.
 
-    Highest_Order_Spatial_Derivatives: The highest order spatial partial
-    derivatives of U that are present in the library terms.
+    LHS_Term: The Library Term (trial functiom + derivative) that appears on
+    the left hand side of the PDE. This is generally a time derivative of U.
 
-    Index_to_Derivatives: A mapping which sends sub-index values to spatial
-    partial derivatives. This is needed to build the library in Coll_Loss.
-    If U is a function of 1 spatial variable, this should be the function
-    Index_to_x_Derivatives. If U is a function of two spatial variables, this
-    should be an instance of Index_to_xy_Derivatives.
-
-    Col_Number_to_Multi_Index: A mapping which sends column numbers to
-    Multi-Indices. Coll_Loss needs this function. This should be an instance of
-    the Col_Number_to_Multi_Index_Class class.
+    RHS_Terms: A list of the Library terms (trial function + derivative)
+    that appear in the right hand side of the PDE.
 
     p, Lambda: the settings value for p and Lambda (in the loss function).
 
@@ -186,7 +168,7 @@ def Testing(
     Returns:
 
     a tuple of floats. The first element holds the Data_Loss. The second
-    holds the Coll_Loss. The third holds Lambda times the Lp_Loss. """
+    holds the Weak_Form_Loss. The third holds Lambda times the Lp_Loss. """
 
     # Put U in evaluation mode
     U.eval();
@@ -197,19 +179,11 @@ def Testing(
             Inputs      = Inputs,
             Targets     = Targets).item();
 
-    Coll_Loss_Value : float = Coll_Loss(
-            U                                   = U,
-            Xi                                  = Xi,
-            Coll_Points                         = Coll_Points,
-            Time_Derivative_Order               = Time_Derivative_Order,
-            Highest_Order_Spatial_Derivatives   = Highest_Order_Spatial_Derivatives,
-            Index_to_Derivatives                = Index_to_Derivatives,
-            Col_Number_to_Multi_Index           = Col_Number_to_Multi_Index,
-            Device                              = Device).item();
+    Weak_Form_Loss_Value : float = Weak_Form_Loss();
 
     Lambda_Lp_Loss_Value : float = Lambda*Lp_Loss(
             Xi    = Xi,
             p     = p).item();
 
     # Return the losses.
-    return (Data_Loss_Value, Coll_Loss_Value, Lambda_Lp_Loss_Value);
+    return (Data_Loss_Value, Weak_Form_Loss_Value, Lambda_Lp_Loss_Value);

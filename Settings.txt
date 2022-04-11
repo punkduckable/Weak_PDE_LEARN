@@ -1,31 +1,31 @@
 ################################################################################
-# Save, Load settings.
+# Save, Load Settings.
 
 # Load settings.
-Load U From Save [bool]:                         True
-Load Xi From Save [bool]:                        True
-Load Optimizer From Save [bool]:                 True
-    Load File Name [str]:                        Burgers_Sine_Tanh_N40_P1000_Adam
+Load U From Save [bool]:                         False
+Load Xi From Save [bool]:                        False
+Load Optimizer From Save [bool]:                 False
+    Load File Name [str]:                        Test
 
 # Save settings
 Save State [bool]:                               True
-    Save File Name [str]:                        Burgers_Sine_Tanh_N40_P1000_Adam
+    Save File Name [str]:                        Test
 
 
 
 ################################################################################
-# PDE settings.
+# PDE Settings.
 
 # Order of the time derivative on the PDE's left-hand side
 Time Derivative Order [int]:                     1
 
-# Library function Settings
-Highest order spatial derivative of U [int]:     2
-Maximum Polynomial Term Degree [int]:            2
+# Where are the library functions listed? (omit .txt extension)
+Library Function / Derivative file [str]:        Library.txt
+
 
 
 ################################################################################
-# Network settings.
+# Network Settings.
 
 # U network.
 Number of Hidden Layers [int]:                   5
@@ -38,14 +38,10 @@ Train on CPU or GPU [GPU, CPU]:                  cpu
 
 
 ################################################################################
-# Loss settings.
+# Loss Settings.
 
 p [float]:                                       .1
 Lambda [float]:                                  .0002
-
-Number of Training Collocation Points [int]:     5000
-Number of Testing Collocation Points [int]:      1000
-
 
 
 ################################################################################
@@ -56,7 +52,7 @@ Threshold [float]:                               .001
 
 
 ################################################################################
-# Optimizer settings.
+# Optimizer Settings.
 
 Optimizer [Adam, LBFGS]:                         Adam
 Learning Rate [float]:                           .001
@@ -65,6 +61,6 @@ Number of Epochs [int]:                          500
 
 
 ################################################################################
-# Data settings.
+# Data Settings.
 
 DataSet [str]:                                  Burgers_Sine_N40_P1000

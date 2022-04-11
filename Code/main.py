@@ -2,17 +2,12 @@ import numpy;
 import torch;
 import time;
 
-from Settings_Reader import Settings_Reader, Settings_Container;
-from Mappings import    Index_to_xy_Derivatives_Class, Index_to_x_Derivatives, \
-                        Num_Sub_Index_Values_1D, Num_Sub_Index_Values_2D, \
-                        Max_Col_Num, \
-                        Col_Number_to_Multi_Index_Class;
-from Loss           import Data_Loss, Lp_Loss, Coll_Loss;
-from Network        import Rational, Neural_Network;
-from Data_Loader    import Data_Loader;
-from Test_Train     import Testing, Training;
-from Points         import Generate_Points;
-from Xi             import Print_PDE;
+from Readers.Settings_Reader    import Settings_Reader, Settings_Container;
+from Loss                       import Data_Loss, Lp_Loss, Coll_Loss;
+from Network                    import Rational, Neural_Network;
+from Data_Loader                import Data_Loader;
+from Test_Train                 import Testing, Training;
+from Points                     import Generate_Points;
 
 
 
@@ -41,23 +36,6 @@ def main():
     Settings.Num_Spatial_Dimensions : int = Data_Container.Input_Bounds.shape[0] - 1;
 
 
-    ############################################################################
-    # Determine the number of index values, library terms.
-
-    # Determine how many index values we can have. This value will be important
-    # going forward.
-    Num_Sub_Index_Values : int = 0;
-    if(Settings.Num_Spatial_Dimensions == 1):
-        Num_Sub_Index_Values = Num_Sub_Index_Values_1D(Settings.Highest_Order_Spatial_Derivatives);
-    if(Settings.Num_Spatial_Dimensions == 2):
-        Num_Sub_Index_Values = Num_Sub_Index_Values_2D(Settings.Highest_Order_Spatial_Derivatives);
-
-
-    # Now, determine how many library terms we have. This will determine the
-    # size of Xi.
-    Num_Library_Terms : int = Max_Col_Num(Max_Sub_Indices      = Settings.Maximum_Term_Degree,
-                                          Num_Sub_Index_Values = Num_Sub_Index_Values);
-
 
     ############################################################################
     # Set up U and Xi.
@@ -82,13 +60,6 @@ def main():
                         device          = Settings.Device,
                         requires_grad   = True);
 
-
-    ############################################################################
-    # Set up the Col_Number_to_Multi_Index map.
-
-    Col_Number_to_Multi_Index = Col_Number_to_Multi_Index_Class(
-                                    Max_Sub_Indices      = Settings.Maximum_Term_Degree,
-                                    Num_Sub_Index_Values = Num_Sub_Index_Values);
 
 
     ############################################################################
@@ -140,16 +111,6 @@ def main():
             param_group['lr'] = Settings.Learning_Rate;
 
 
-
-    ############################################################################
-    # Set up Index_to_Derivatives.
-
-    if(Settings.Num_Spatial_Dimensions == 1):
-        Index_to_Derivatives = Index_to_x_Derivatives;
-    if(Settings.Num_Spatial_Dimensions == 2):
-        Index_to_Derivatives = Index_to_xy_Derivatives_Class(
-                                        Highest_Order_Derivatives   = Settings.Highest_Order_Spatial_Derivatives);
-
     # Setup is now complete. Report time.
     print("Done! Took %7.2fs" % (time.perf_counter() - Setup_Timer));
 
@@ -173,10 +134,8 @@ def main():
                     Coll_Points                         = Train_Coll_Points,
                     Inputs                              = Data_Container.Train_Inputs,
                     Targets                             = Data_Container.Train_Targets,
-                    Time_Derivative_Order               = Settings.Time_Derivative_Order,
-                    Highest_Order_Spatial_Derivatives   = Settings.Highest_Order_Spatial_Derivatives,
-                    Index_to_Derivatives                = Index_to_Derivatives,
-                    Col_Number_to_Multi_Index           = Col_Number_to_Multi_Index,
+                    LHS_Term                            = Library.LHS_Term,
+                    RHS_Terms                           = Library.RHS_Terms,
                     p                                   = Settings.p,
                     Lambda                              = Settings.Lambda,
                     Optimizer                           = Optimizer,
@@ -198,34 +157,30 @@ def main():
                 Coll_Points                         = Train_Coll_Points,
                 Inputs                              = Data_Container.Train_Inputs,
                 Targets                             = Data_Container.Train_Targets,
-                Time_Derivative_Order               = Settings.Time_Derivative_Order,
-                Highest_Order_Spatial_Derivatives   = Settings.Highest_Order_Spatial_Derivatives,
-                Index_to_Derivatives                = Index_to_Derivatives,
-                Col_Number_to_Multi_Index           = Col_Number_to_Multi_Index,
+                LHS_Term                            = Library.LHS_Term,
+                RHS_Terms                           = Library.RHS_Terms,
                 p                                   = Settings.p,
                 Lambda                              = Settings.Lambda,
                 Device                              = Settings.Device);
 
             # Evaluate losses on the testing points.
-            (Test_Data_Loss, Test_Coll_Loss, Test_Lp_Loss) = Testing(
+            (Test_Data_Loss, Test_Weak_Form_Loss, Test_Lp_Loss) = Testing(
                 U                                   = U,
                 Xi                                  = Xi,
                 Coll_Points                         = Test_Coll_Points,
                 Inputs                              = Data_Container.Test_Inputs,
                 Targets                             = Data_Container.Test_Targets,
-                Time_Derivative_Order               = Settings.Time_Derivative_Order,
-                Highest_Order_Spatial_Derivatives   = Settings.Highest_Order_Spatial_Derivatives,
-                Index_to_Derivatives                = Index_to_Derivatives,
-                Col_Number_to_Multi_Index           = Col_Number_to_Multi_Index,
+                LHS_Term                            = Library.LHS_Term,
+                RHS_Terms                           = Library.RHS_Terms,
                 p                                   = Settings.p,
                 Lambda                              = Settings.Lambda,
                 Device                              = Settings.Device);
 
             # Print losses!
-            print("Epoch #%-4d | Test: \t Data = %.7f\t Coll = %.7f\t Lp = %.7f \t Total = %.7f"
-                % (t, Test_Data_Loss, Test_Coll_Loss, Test_Lp_Loss, Test_Data_Loss + Test_Coll_Loss + Test_Lp_Loss));
-            print("            | Train:\t Data = %.7f\t Coll = %.7f\t Lp = %.7f \t Total = %.7f"
-                % (Train_Data_Loss, Train_Coll_Loss, Train_Lp_Loss, Train_Data_Loss + Train_Coll_Loss + Train_Lp_Loss));
+            print("Epoch #%-4d | Test: \t Data = %.7f\t Weak = %.7f\t Lp = %.7f \t Total = %.7f"
+                % (t, Test_Data_Loss, Test_Weak_Form_Loss, Test_Lp_Loss, Test_Data_Loss + Test_Coll_Loss + Test_Lp_Loss));
+            print("            | Train:\t Data = %.7f\t Weak = %.7f\t Lp = %.7f \t Total = %.7f"
+                % (Train_Data_Loss, Test_Weak_Form_Loss, Train_Lp_Loss, Train_Data_Loss + Test_Weak_Form_Loss + Train_Lp_Loss));
         else:
             print(("Epoch #%-4d | "   % t));
 
@@ -252,11 +207,7 @@ def main():
     ############################################################################
     # Report final PDE
 
-    Print_PDE(  Xi                        = Pruned_Xi,
-                Time_Derivative_Order     = Settings.Time_Derivative_Order,
-                Num_Spatial_Dimensions    = Settings.Num_Spatial_Dimensions,
-                Index_to_Derivatives      = Index_to_Derivatives,
-                Col_Number_to_Multi_Index = Col_Number_to_Multi_Index);
+    print("If you're reading this, then Robert fogot to write the code that prints the final PDE")
 
 
     ############################################################################
