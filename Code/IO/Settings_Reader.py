@@ -1,5 +1,7 @@
 import torch;
-from File_Reader import Read_Error, Read_Line_After;
+
+from File_Reader    import Read_Error, Read_Line_After;
+from Library_Reader import Read_Library;
 
 
 
@@ -134,8 +136,11 @@ def Settings_Reader() -> Settings_Container:
 
     # Where is the file that lists the library functions / derivatives?
     Library_File_Name : str =  Read_Setting(File, "Library File [str]:");
+    RHS_Term, LHS_Terms     = Read_Library(Library_File_Name);
 
-    print("If you're reading this, Robert forgot to write code to load the library.");
+    Settings.RHS_Term       = RHS_Term;
+    Settings.LHS_Terms      = LHS_Terms;
+
 
 
     ############################################################################

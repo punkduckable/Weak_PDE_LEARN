@@ -54,32 +54,37 @@ class Derivative():
 
 
 
-    def Print(self) -> None:
-        """ This function prints the object's partial derivative operator in a
-        human readable format. """
+    def __str__(self) -> str:
+        """ This function returns a string that contains a human-readable
+        expression for the derivative operator that this object represents. It
+        is mainly used for printing. """
 
-        # Print Time derivative.
+        Buffer : str = "";
+
+        # Time derivative.
         if  (self.Encoding[0] == 1):
-            print("D_t ", end = '');
+            Buffer += "D_t ";
         elif(self.Encoding[0] > 1 ):
-            print("D_t^%u " % self.Encoding[0], end = '');
+            Buffer += ("D_t^%u " % self.Encoding[0]);
 
-        # Print x derivative.
+        # x derivative.
         if  (self.Encoding[1] == 1):
-            print("D_x ", end = '');
+            Buffer += "D_x ";
         elif(self.Encoding[1] > 1 ):
-            print("D_x^%u " % self.Encoding[1], end = '');
+            Buffer += ("D_x^%u " % self.Encoding[1]);
 
-        # Print y derivative (if it exists)
+        # y derivative (if it exists)
         if(self.Num_Spatial_Vars > 1):
             if  (self.Encoding[2] == 1):
-                print("D_y ", end = '');
+                Buffer += "D_y ";
             elif(self.Encoding[2] > 1 ):
-                print("D_y^%u " % self.Encoding[2], end = '');
+                Buffer += ("D_y^%u " % self.Encoding[2]);
 
-        # Print z derivative (if it exists).
+        # z derivative (if it exists).
         if(self.Num_Spatial_Vars > 2):
             if  (self.Encoding[3] == 1):
-                print("D_z ", end = '');
+                Buffer += "D_z ";
             elif(self.Encoding[3] > 1 ):
-                print("D_z^%u " % self.Encoding[3], end = '');
+                Buffer += ("D_z^%u " % self.Encoding[3]);
+
+        return Buffer;

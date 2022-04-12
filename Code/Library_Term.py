@@ -28,9 +28,17 @@ class Library_Term():
         self.Derivative     = Derivative;
         self.Trial_Function = Trial_Function;
 
-    def Print(self):
-        # Print the Derivative.
-        self.Derivative.Print();
+    def __str__(self) -> str:
+        """ This function returns a human-readable form of the Library term that
+        this object represents."""
 
-        # Print the Trial Function.
-        self.Trial_Function.Print();
+        Buffer : str = "";
+
+        # Get the Derivative.
+        Buffer += self.Derivative.__str__();
+
+        # Get the Trial Function.
+        Buffer += self.Trial_Function.__str__();
+
+        # All done! Return!
+        return Buffer;

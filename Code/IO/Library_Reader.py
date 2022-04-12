@@ -200,11 +200,9 @@ def main():
     File = open("../../Library.txt", "r");
     RHS_Term, LHS_Terms = Read_Library(File_Name = "Library");
 
-    RHS_Term.Print();
-    print();
+    print(RHS_Term);
     for i in range(len(LHS_Terms)):
-        LHS_Terms[i].Print();
-        print();
+        print(LHS_Terms[i]);
 
 
 if __name__ == "__main__":
