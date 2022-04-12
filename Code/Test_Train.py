@@ -1,9 +1,10 @@
 import  numpy       as np;
 import  torch;
-from    typing      import List;
+from    typing      import List, Tuple;
 
-from Network    import  Neural_Network;
-from Loss       import  Data_Loss, Coll_Loss, Lp_Loss, L0_Approx_Loss;
+from Network        import Neural_Network;
+from Loss           import Data_Loss, Weak_Form_Loss, Lp_Loss;
+from Library_Term   import Library_Term;
 
 
 

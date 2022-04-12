@@ -100,7 +100,7 @@ def Settings_Reader() -> Settings_Container:
     Settings.txt. The main function uses these to set up the program. """
 
     # Open file, initialze a Settings object.
-    File = open("../../Settings.txt", "r");
+    File = open("../Settings.txt", "r");
     Settings = Settings_Container();
 
 
@@ -135,8 +135,9 @@ def Settings_Reader() -> Settings_Container:
     Settings.Time_Derivative_Order = int(Read_Setting(File, "Time Derivative Order [int]:"));
 
     # Where is the file that lists the library functions / derivatives?
-    Library_File_Name : str =  Read_Setting(File, "Library File [str]:");
-    RHS_Term, LHS_Terms     = Read_Library(Library_File_Name);
+    Library_File_Name : str = Read_Setting(File, "Library File [str]:");
+    Library_Path      : str = "../" + Library_File_Name + ".txt";
+    RHS_Term, LHS_Terms     = Read_Library(Library_Path);
 
     Settings.RHS_Term       = RHS_Term;
     Settings.LHS_Terms      = LHS_Terms;

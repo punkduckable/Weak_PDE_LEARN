@@ -2,8 +2,7 @@ import numpy;
 import torch;
 import math;
 
-from Network                import    Neural_Network;
-from Evaluate_Derivatives   import Evaluate_Derivatives;
+from Network                import Neural_Network;
 
 
 
@@ -48,7 +47,7 @@ def Data_Loss(
 
 
 
-def Weak_Form_Loss(None) -> torch.Tensor:
+def Weak_Form_Loss() -> torch.Tensor:
     """ To do.... """
 
     return torch.tensor(0, dtype = numpy.float32);

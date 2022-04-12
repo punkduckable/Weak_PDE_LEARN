@@ -169,11 +169,19 @@ def Read_Library_Term(File):
 
 
 
-def Read_Library(File_Name : str) -> Tuple[Library_Term, List[Library_Term]]:
-    """ To do :D  """
+def Read_Library(File_Path : str) -> Tuple[Library_Term, List[Library_Term]]:
+    """ This function reads the Library terms in Library.txt.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    File_Path: This is the name (relative to the working director of the file
+    that houses the main function that called this one, and with a .txt
+    extension of the library file). Thus, if we run this from Code/main.txt, and
+    the Library function is Library.txt, then File_Path should be ../Library.txt
+    """
 
     # First, open the file.
-    File_Path: str = "../../" + File_Name + ".txt";
     File = open(File_Path, 'r');
 
     # Next, read the RHS Term. This is the first Library term in the file.
@@ -192,13 +200,14 @@ def Read_Library(File_Name : str) -> Tuple[Library_Term, List[Library_Term]]:
             LHS_Terms.append(Term);
 
     # All done!
+    File.close();
     return RHS_Term, LHS_Terms;
 
 
 
 def main():
-    File = open("../../Library.txt", "r");
-    RHS_Term, LHS_Terms = Read_Library(File_Name = "Library");
+    File_Path : str = "../../Library.txt";
+    RHS_Term, LHS_Terms = Read_Library(File_Path = File_Path);
 
     print(RHS_Term);
     for i in range(len(LHS_Terms)):

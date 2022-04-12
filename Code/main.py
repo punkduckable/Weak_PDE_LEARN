@@ -1,13 +1,24 @@
+# Nonsense to add IO diectory to the Python search path.
+import os
+import sys
+
+# Get path to Code, IO directories.
+Code_Path   = os.path.dirname(os.path.abspath(__file__));
+IO_Path     = os.path.join(Code_Path, "IO");
+
+# Add the IO directory to the python path.
+sys.path.append(IO_Path);
+
 import numpy;
 import torch;
 import time;
 
-from Readers.Settings_Reader    import Settings_Reader, Settings_Container;
-from Loss                       import Data_Loss, Lp_Loss, Coll_Loss;
-from Network                    import Rational, Neural_Network;
-from Data_Loader                import Data_Loader;
-from Test_Train                 import Testing, Training;
-from Points                     import Generate_Points;
+from Settings_Reader    import Settings_Reader, Settings_Container;
+from Loss               import Data_Loss, Lp_Loss, Weak_Form_Loss;
+from Network            import Rational, Neural_Network;
+from Data_Loader        import Data_Loader;
+from Test_Train         import Testing, Training;
+from Points             import Generate_Points;
 
 
 
@@ -15,7 +26,22 @@ def main():
     # Load the settings, print them.
     Settings = Settings_Reader();
     for (Setting, Value) in Settings.__dict__.items():
-        print(("%-25s = " % Setting) + str(Value));
+        # Python does weird things if you want to print a list... so we have
+        # to handle this case separately.
+        if(isinstance(Value, list)):
+            # First, print the setting nane.
+            print("%-25s = " % Setting, end = '');
+
+            # Next, print the contents of the list, one by one. 
+            num_items : int = len(Value);
+            for i in range(num_items - 1):
+                print(str(Value[i]) + ", ", end = '');
+            print(str(Value[-1]) + ".");
+        # If we're not dealing with a list, just print the setting, value.
+        else:
+            print(("%-25s = " % Setting) + str(Value));
+
+    exit();
 
     # Start a setup timer.
     Setup_Timer : float = time.perf_counter();
