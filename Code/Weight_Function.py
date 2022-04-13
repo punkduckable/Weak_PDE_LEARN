@@ -37,7 +37,10 @@ class Weight_Function(torch.nn.Module):
 
         r : The radius of the weight function. See class docstring. """
 
-        # First, check that X_0 is a 1D array.
+        # First, call the module initializer.
+        super(Weight_Function, self).__init__();
+
+        # Next, check that X_0 is a 1D array.
         assert(len(X_0.shape) == 1);
 
         # Next, check that r > 0.
