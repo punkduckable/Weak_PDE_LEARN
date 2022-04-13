@@ -9,43 +9,34 @@ def Evaluate_Derivative(
         w           : Weight_Function,
         D           : Derivative,
         Coords      : torch.Tensor) -> torch.Tensor:
-    """ To Do :D
-
-
-
-     This function evaluates U, its first time derivative, and some of its
-    spatial partial derivatives, at each coordinate in Coords.
-
-    Note: This function only works if U is a function of 1 or 2 spatial
-    variables.
+    """ This function applies a particular partial derivative operator, D, of
+    a weight function, w, and then evaluates the resulting function on Coords.
+    In other words, this function evaluates D(w)(X), for each X in Coords.
 
     ----------------------------------------------------------------------------
     Arguments:
 
-    U: The network we're differentiating.
+    w : The weight function whose derivative we evaluate. In general, w must
+    depend on "enough" variables for D(w) to make sense. In other words, if
+    w is defined on R^n, then D's Encoding vector must have <= n elements. Why?
+    Recall that the kth component of D's encoding vector represents the partial
+    derivative order with respect to the kth variable. For this to make sense,
+    w must be a function of at least k variables.
 
-    Time_Derivative_Order: The order of the desired time derivative.
+    D : A derivative object. We apply the partial derivative operator that
+    D represents to w.
 
-    Highest_Order_Spatial_Derivatives: The highest order spatial partial
-    derivatives of U that we need to evaluate.
-
-    Coords: A two (1 spatial variable) or three (2 spatial variables) column
-    Tensor whose ith row holds the t, x (1 spatial variable) or t, x, y (2
-    spatial variables) coordinates of the point where we want to evaluate U
-    and its derivatives.
-
-    Device: The device that U is loaded on (either gpu or cpu).
+    Coords : The points at which we evaluate D(w). Is w is defined on R^n, then
+    this should be an B by n tensor whose ith row holds the ith coordinate at
+    which we want to evaluate D(w). Thus, each row of D(w) represents a point in
+    R^n.
 
     ----------------------------------------------------------------------------
     Returns:
 
-    This returns a two-element Tuple! If Coords has M rows, then the first
-    return argument is an M element Tensor whose ith element holds the value of
-    D_{t}^{n} U at the ith coordinate, where n = Time_Derivative_Order.
-
-    The second is a List of tensors, whose jth element is the spatial partial
-    derivative of U associated with the sub index value j, evaluated at the
-    coordinates. """
+    This returns a 1D Tensor. If Coords has B rows, then the returned tensor has
+    B elements. The ith component of the returned Tensor holds D(w) evaluated
+    at the ith coordinate (ith row of Coords). """
 
     # We need to evaluate derivatives, so set Requires Grad to true.
     Coords.requires_grad_(True);

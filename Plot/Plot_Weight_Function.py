@@ -115,7 +115,7 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
 
     for i in range(100):
         for j in range(100):
-            Coords[100*i + j, :] = Center;
+            Coords[100*i + j, :]     = Center;
 
             Coords[100*i + j, Dim_0] = Dim0_Pts[i];
             Coords[100*i + j, Dim_1] = Dim1_Pts[j];
@@ -138,8 +138,9 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
             grid_Dim1_Coords[i, j]  = Dim1_Pts[j];
 
     # Get min and max of D_w. We will use this to set up colors plot colors.
-    D_w_min : float = numpy.min(grid_D_w);
-    D_w_max : float = numpy.max(grid_D_w);
+    epsilon : float = .0001;
+    D_w_min : float = numpy.min(grid_D_w) - epsilon;
+    D_w_max : float = numpy.max(grid_D_w) + epsilon;
 
     # Plot!
     pyplot.contourf(    grid_Dim0_Coords,
@@ -161,7 +162,7 @@ def main():
 
     w : Weight_Function = Weight_Function(X_0 = Center, r = Radius);
 
-    D = Derivative(Encoding = numpy.array([0, 0, 1, 1], dtype = numpy.int32));
+    D = Derivative(Encoding = numpy.array([0, 1, 1, 1], dtype = numpy.int32));
     Plot_Bump(w, 2, 3);
     Plot_Bump_Derivative(w, D, 2, 3);
 
