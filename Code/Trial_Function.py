@@ -1,6 +1,4 @@
 
-
-
 class Trial_Function():
     """ Objects of this class hold an abstract representation of a trial.
 

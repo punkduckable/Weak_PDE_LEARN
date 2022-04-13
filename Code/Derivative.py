@@ -9,7 +9,7 @@ class Derivative():
     ----------------------------------------------------------------------------
     Members:
 
-    Encodoing : A 1D numpy array of integers characterizing the partial
+    Encoding : A 1D numpy array of integers characterizing the partial
     derivative operator. If there are n spatial variables, then this should be a
     n + 1 element array, whose 0 element holds the number of time derivatives,
     and whose ith element (for i > 0) holds the derivative order with respect to
@@ -29,7 +29,7 @@ class Derivative():
         ------------------------------------------------------------------------
         Arguments:
 
-        Encodoing: See class docstring. """
+        Encoding: See class docstring. """
 
         # First, cast to integer array. This also returns a copy of Encoding.
         Encoding : numpy.ndarray = Encoding.astype(dtype = numpy.int32);

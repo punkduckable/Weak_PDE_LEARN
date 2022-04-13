@@ -18,7 +18,6 @@ import matplotlib.pyplot as pyplot;
 # Code files.
 from Derivative             import Derivative;
 from Weight_Function        import Weight_Function;
-from Evaluate_Derivative    import Evaluate_Derivative;
 
 
 
@@ -90,7 +89,7 @@ def Plot_Bump(  w       : Weight_Function,
 
 
 def Plot_Bump_Derivative(   w           : Weight_Function,
-                            Derivative  : Derivative,
+                            D  : Derivative,
                             Dim_0       : int,
                             Dim_1       : int) -> None:
     # First, get the center and radius of w.
@@ -122,10 +121,8 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
 
 
     # Evaluate Derivative of w at the coords.
-    D_w : numpy.ndarray = Evaluate_Derivative(
-                                w       = w,
-                                D       = Derivative,
-                                Coords  = Coords).detach().numpy();
+    w.Add_Derivative(D = D, Coords = Coords);
+    D_w : numpy.ndarray = w.Get_Derivative(D = D).detach().numpy();
 
     # Set up plotting coordinates.
     grid_Dim0_Coords : numpy.ndarray = numpy.empty(shape = (100, 100), dtype = numpy.float32);
@@ -162,7 +159,7 @@ def main():
 
     w : Weight_Function = Weight_Function(X_0 = Center, r = Radius);
 
-    D = Derivative(Encoding = numpy.array([0, 1, 1, 1], dtype = numpy.int32));
+    D = Derivative(Encoding = numpy.array([0, 0, 1, 1], dtype = numpy.int32));
     Plot_Bump(w, 2, 3);
     Plot_Bump_Derivative(w, D, 2, 3);
 
