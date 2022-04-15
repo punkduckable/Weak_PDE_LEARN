@@ -23,7 +23,8 @@ from Weight_Function        import Weight_Function;
 
 def Plot_Bump(  w       : Weight_Function,
                 Dim_0   : int,
-                Dim_1   : int) -> None:
+                Dim_1   : int,
+                Coords  : torch.Tensor) -> None:
     """ This function plots a slice of the Weight Function, w. If w is a
     function of two variables (t and x), then this simply plots w. Otherwise,
     it plots a slice of w. To see this, suppose that Dim_0 = 0, Dim_1 = 1 and
@@ -34,42 +35,13 @@ def Plot_Bump(  w       : Weight_Function,
     Center : torch.Tensor   = w.X_0;
     Radius : float          = w.r;
 
-    # Make a Box, [t_low, t_high] x [x_low, x_high] centered at Center, with
-    # side length 3r.
-    a : float = Center[Dim_0] - 1.5*Radius;
-    b : float = Center[Dim_0] + 1.5*Radius;
-
-    c : float = Center[Dim_1] - 1.5*Radius;
-    d : float = Center[Dim_1] + 1.5*Radius;
-
-    # Place a grid on this box with 100 gridlines along each axis.
-    Dim0_Pts : numpy.ndarray = numpy.linspace(start = a, stop = b, num = 100);
-    Dim1_Pts : numpy.ndarray = numpy.linspace(start = c, stop = d, num = 100);
-
-    # Generate coords.
-    n : int = torch.numel(Center);
-    Coords  = torch.empty(size = (100*100, n), dtype = torch.float32);
-
-    for i in range(100):
-        for j in range(100):
-            Coords[100*i + j, :] = Center;
-
-            Coords[100*i + j, 0] = Dim0_Pts[i];
-            Coords[100*i + j, 1] = Dim1_Pts[j];
-
-
     # Evaluate w at the coords.
     w_Coords : numpy.ndarray = w(Coords).detach().numpy();
 
     # Set up plotting coordinates.
-    grid_Dim0_Coords : numpy.ndarray = numpy.empty(shape = (100, 100), dtype = numpy.float32);
-    grid_Dim1_Coords : numpy.ndarray = numpy.empty(shape = (100, 100), dtype = numpy.float32);
+    grid_Dim0_Coords : numpy.ndarray = Coords[:, Dim_0].reshape(100, 100);
+    grid_Dim1_Coords : numpy.ndarray = Coords[:, Dim_1].reshape(100, 100);
     grid_w_Coords    : numpy.ndarray = w_Coords.reshape(100, 100);
-
-    for i in range(100):
-        for j in range(100):
-            grid_Dim0_Coords[i, j]  = Dim0_Pts[i];
-            grid_Dim1_Coords[i, j]  = Dim1_Pts[j];
 
     # Get min and max of w_Coords. We will use this to set up colors plot colors.
     w_Coords_min : float = numpy.min(grid_w_Coords);
@@ -89,50 +61,22 @@ def Plot_Bump(  w       : Weight_Function,
 
 
 def Plot_Bump_Derivative(   w           : Weight_Function,
-                            D  : Derivative,
+                            D           : Derivative,
                             Dim_0       : int,
-                            Dim_1       : int) -> None:
+                            Dim_1       : int,
+                            Coords      : torch.Tensor) -> None:
     # First, get the center and radius of w.
     Center : torch.Tensor   = w.X_0;
     Radius : float          = w.r;
 
-    # Make a Box, [t_low, t_high] x [x_low, x_high] centered at Center, with
-    # side length 3r.
-    a : float = Center[Dim_0] - 1.5*Radius;
-    b : float = Center[Dim_0] + 1.5*Radius;
-
-    c : float = Center[Dim_1] - 1.5*Radius;
-    d : float = Center[Dim_1] + 1.5*Radius;
-
-    # Place a grid on this box with 100 gridlines along each axis.
-    Dim0_Pts : numpy.ndarray = numpy.linspace(start = a, stop = b, num = 100);
-    Dim1_Pts : numpy.ndarray = numpy.linspace(start = c, stop = d, num = 100);
-
-    # Generate coords.
-    n : int = torch.numel(Center);
-    Coords  = torch.empty(size = (100*100, n), dtype = torch.float32);
-
-    for i in range(100):
-        for j in range(100):
-            Coords[100*i + j, :]     = Center;
-
-            Coords[100*i + j, Dim_0] = Dim0_Pts[i];
-            Coords[100*i + j, Dim_1] = Dim1_Pts[j];
-
-
     # Evaluate Derivative of w at the coords.
-    w.Add_Derivative(D = D, Coords = Coords);
+    w.Add_Derivative(D = D);
     D_w : numpy.ndarray = w.Get_Derivative(D = D).detach().numpy();
 
     # Set up plotting coordinates.
-    grid_Dim0_Coords : numpy.ndarray = numpy.empty(shape = (100, 100), dtype = numpy.float32);
-    grid_Dim1_Coords : numpy.ndarray = numpy.empty(shape = (100, 100), dtype = numpy.float32);
+    grid_Dim0_Coords : numpy.ndarray = Coords[:, Dim_0].reshape(100, 100);
+    grid_Dim1_Coords : numpy.ndarray = Coords[:, Dim_1].reshape(100, 100);
     grid_D_w         : numpy.ndarray = D_w.reshape(100, 100);
-
-    for i in range(100):
-        for j in range(100):
-            grid_Dim0_Coords[i, j]  = Dim0_Pts[i];
-            grid_Dim1_Coords[i, j]  = Dim1_Pts[j];
 
     # Get min and max of D_w. We will use this to set up colors plot colors.
     epsilon : float = .0001;
@@ -154,14 +98,62 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
 
 
 def main():
+    # Set center, radius of weight function.
     Center : torch.Tensor   = torch.tensor([0, 0, 0, 0], dtype = torch.float32);
     Radius : float          = 3;
 
-    w : Weight_Function = Weight_Function(X_0 = Center, r = Radius);
+
+    ############################################################################
+    # Define the grid we will evaluate the weight function on.
+
+    # Since we can only plot a function of two variables, the coords will lie
+    # along a 2D plane... first, select which two dimensions.
+    Dim_0 : int = 2;
+    Dim_1 : int = 3;
+
+    # The coordinates will lie in a Box [a, b] x [c, d] centered at Center, with
+    # side length 3r, in the Dim_0 x Dim_1 plane.
+    a : float = Center[Dim_0] - 1.5*Radius;
+    b : float = Center[Dim_0] + 1.5*Radius;
+
+    c : float = Center[Dim_1] - 1.5*Radius;
+    d : float = Center[Dim_1] + 1.5*Radius;
+
+    # Place a grid on this box with 100 gridlines along each axis.
+    Dim0_Pts : numpy.ndarray = numpy.linspace(start = a, stop = b, num = 100);
+    Dim1_Pts : numpy.ndarray = numpy.linspace(start = c, stop = d, num = 100);
+
+    # Generate Coords (non Dim_0/Dim_1 components are the corresponding
+    # components of Center)
+    n : int = torch.numel(Center);
+    Coords  = torch.empty(size = (100*100, n), dtype = torch.float32);
+
+    for i in range(100):
+        for j in range(100):
+            Coords[100*i + j, :]     = Center;
+
+            Coords[100*i + j, Dim_0] = Dim0_Pts[i];
+            Coords[100*i + j, Dim_1] = Dim1_Pts[j];
+
+
+    ############################################################################
+    # Initialize weight function
+
+    w : Weight_Function = Weight_Function(  X_0     = Center,
+                                            r       = Radius,
+                                            Coords  = Coords);
+
+
+    ############################################################################
+    # Initialize Derivative operator.
 
     D = Derivative(Encoding = numpy.array([0, 0, 1, 1], dtype = numpy.int32));
-    Plot_Bump(w, 2, 3);
-    Plot_Bump_Derivative(w, D, 2, 3);
+
+    ############################################################################
+    # Plot!!!
+
+    Plot_Bump(              w,      Dim_0 = Dim_0, Dim_1 = Dim_1, Coords = Coords);
+    Plot_Bump_Derivative(   w,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, Coords = Coords);
 
 
 

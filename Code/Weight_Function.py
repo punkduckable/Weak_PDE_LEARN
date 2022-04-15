@@ -12,6 +12,36 @@ class Weight_Function(torch.nn.Module):
                     { 0                                   otherwise
     Such a function is infinitely differentiable on R^n.
 
+    A weight function is always paired with a set of coordinates. We assume that
+    you'll want to compute various integrals of the form
+            \int_{S} w(X) D^{(k)} F_k(U(X)) dX),
+    for some set S. Here, D^{(k)} is a partial derivative operator, and F_k(U)
+    is a trial function. To approximate this integral, we evaluate the integrand
+    at a set of points in S. We assume that we use the same points for every
+    integral involving a particular weight function. Under this assumption, each
+    weight function can be paired with a set of coordinates.
+
+    Using the same set of coordinates for each integral also allows for a key
+    performance breakthrough: We only need to evaluate w and its derivatives at
+    the coordiantes once. Once we have these values, we can then use them each
+    time we want to compute an integral involving w (or its derivatives). This
+    is why weight function objects have the "Derivatives" dictionary. This
+    dictionary stores the various derivatives of w, evaluated at the set of
+    coordinates paired with w.
+
+    We can, however, make a critical reduction that boosts performance and
+    slashes storage requirements: A bump function and its derivatives are zero
+    outside of the ball B_r(X_0). As such, there is no need to store the value
+    of w or its derivatives at points outside of B_r(X_0). Weight functions take
+    advantage of this. In particular, when you initialize a weight function, you
+    do so using that function's set of coordinates. We determine which
+    coordinates are in B_r(X_0) and down write them (and their indices within
+    the sef of coordinates). When the user asks us to calculate a particular
+    derivative of w, we simply evaluate it at the coordinates we wrote down.
+    If the user asks for the value of a derivative of w, we can use the values
+    we wrote down to reconstruct the derivative on the entire set of
+    coordinates.
+
     ----------------------------------------------------------------------------
     Members:
 
@@ -23,12 +53,27 @@ class Weight_Function(torch.nn.Module):
 
     Input_Dim : w (see above) is defined on R^n. This is n.
 
-    Derivatives : A dictionary. For this dictionary, an elements key is a
-    Derivative object's encoding array. Its value is a torch tensor that holds
-    the value of the corresponding derivative of the weight function at a
-    set of coordinates.  """
+    Num_Coords : The number of rows in theCoords tensor passed to the
+    Initializer. We use this to reconstruct various derivatives of w (see
+    Get_Derivative).
 
-    def __init__(self, X_0 : torch.Tensor, r : float) -> None:
+    Support_Coords : When we initialize a weight function object, we pass a set
+    of coordinates. Support_Coords is the set of coordinates in that set that
+    are also in B_r(X_0).
+
+    Support_Indices : When we initialize a weight function object, we pass a set
+    of coordinates. Support_Indices holds the indices, within the original
+    set of coordinates, of those coordinates which are in B_r(X_0).
+
+    Derivatives : A dictionary that holds various derivatives of w evaluated at
+    Support_Coords. For this dictionary, an elements key is a Derivative
+    object's encoding array. Its value is a torch tensor that holds the value of
+    the corresponding derivative of the weight function at a set of coordinates. """
+
+    def __init__(   self,
+                    X_0     : torch.Tensor,
+                    r       : float,
+                    Coords  : torch.Tensor) -> None:
         """ Class initializer.
 
         ------------------------------------------------------------------------
@@ -36,25 +81,54 @@ class Weight_Function(torch.nn.Module):
 
         X_0 : The center of the weight function. See class docstring.
 
-        r : The radius of the weight function. See class docstring. """
+        r : The radius of the weight function. See class docstring.
+
+        Coords : A list of coordinates. Whenever we apply a derivative to w, we
+        evaluate (and store) the derivative at the coordinates in Coords. We
+        assume this is a B by n dimensional array whose ith row holds the ith
+        coordinate. Here, B is the number of coordinates and n is the number of
+        components in each coordinate. """
 
         # First, call the module initializer.
         super(Weight_Function, self).__init__();
 
-        # Next, check that X_0 is a 1D array.
-        assert(len(X_0.shape) == 1);
 
-        # Next, check that r > 0.
-        assert(r > 0);
+        ########################################################################
+        # Checks
 
+        assert(len(X_0.shape) == 1);                # X_0 should be a 1D Tensor.
+        assert(len(Coords.shape) == 2);             # Coords should be a 2D Tensor.
+        assert(Coords.shape[1] == X_0.shape[0]);    # X_0 should be in the same space as the Coords
+        assert(r > 0);                              # radius must be positive.
+
+
+        ########################################################################
         # Assuming we passed the checks, assign X_0 and r members. We can also
         # determine the input dimension from the length of X_0.
-        self.X_0        : torch.Tensor  = X_0;
-        self.Input_Dim  : int           = X_0.numel();
-        self.r          : float         = r;
 
-        # Finally, intialize this object's derivatives array.
-        self.Derivatives : dict = {};
+        self.X_0            : torch.Tensor  = X_0;
+        self.Input_Dim      : int           = X_0.numel();
+        self.r              : float         = r;
+
+        # Get Num_Coords.
+        self.Num_Coords     : int           = Coords.shape[0];
+
+        # Intialize this object's derivatives array.
+        self.Derivatives    : dict = {};
+
+
+        ########################################################################
+        # Now, determine which coordinates are in B_r(X_0).
+
+        # First, calculate || X - X_0 ||_2^2.
+        XmX0                    : torch.Tensor  = torch.subtract(Coords, X_0);
+        Norm_XmX0               : torch.Tensor  = torch.sum(torch.multiply(XmX0, XmX0), dim = 1);
+
+        # Now, determine which coordinates are in B_r(X_0).
+        self.Support_Indices    : torch.Tensor  = torch.less(Norm_XmX0, r*r);
+
+        # Record the coordinates that are.
+        self.Support_Coords     : torch.Tensor  = Coords[self.Support_Indices, :];
 
 
 
@@ -99,34 +173,25 @@ class Weight_Function(torch.nn.Module):
 
 
     def Add_Derivative(     self,
-                            D       : Derivative,
-                            Coords  : torch.Tensor) -> None:
+                            D       : Derivative) -> None:
         """ Let w denote this weight function object. This method evaluates
-        D(w) at Coords, and then stores the result in w.Derivatives. Critically,
-        we only perform these calculations if w.Derivatives does not contain
-        an entry corresponding to D. One consequence of this is that once we
-        add an entry to w.Derivatives for a particular D, we can not change the
-        coordinates at which we evaluated D(w).
+        D(w) at w.Support_Coords, and then stores the result in w.Derivatives.
+        Critically, we only perform these calculations if w.Derivatives does not
+        contain an entry corresponding to D.
 
         ------------------------------------------------------------------------
         Arguments:
 
-        D : A derivative operator. We evaluate D(w) at Coords. In general, D(w)
-        must make sense. This means that if w is a function on R^n, then
-        D.Encoding should contain at most n elements. Why? D.Encoding[k]
-        represents the number of derivatives with respect to the kth variable.
-        This really only makes sense if w depends on at least k variables.
-
-        Coords : The coordinates at which we evaluate D(w). If w is defined on
-        R^n, then this should be a B by n tensor whose ith row is the ith
-        coordinate at which we want to evaluate D(w).
+        D : A derivative operator. In general, D(w) must make sense. This means
+        that if w is a function on R^n, then D.Encoding should contain at most n
+        elements. Why? D.Encoding[k] represents the number of derivatives with
+        respect to the kth variable. This really only makes sense if w depends
+        on at least k variables.
 
         ------------------------------------------------------------------------
         Returns:
 
-        A 1D tensor. If Coords has B rows, then this is a B element tensor
-        whose ith row holds the value of D(w) at the ith coordinate (ith row of
-        Coords). """
+        Nothing! """
 
         # First, check if we've already evaluated D(w).
         if(tuple(D.Encoding) in self.Derivatives):
@@ -136,7 +201,7 @@ class Weight_Function(torch.nn.Module):
         # If not, then let's calculate it.
         Dw : torch.Tensor = Evaluate_Derivative(    w       = self,
                                                     D       = D,
-                                                    Coords  = Coords);
+                                                    Coords  = self.Support_Coords);
         self.Derivatives[tuple(D.Encoding)] = Dw;
 
         # All done!
@@ -144,10 +209,10 @@ class Weight_Function(torch.nn.Module):
 
 
 
-    def Get_Derivative(self, D : Derivative):
-        """ This function returns the element of self.Derivatives corresponding
-        to D(w) (assuming it exists). That entry of self.Derivatives should hold
-        D(w) evaluated at a set of coordinates. See Add_Derivative.
+    def Get_Derivative(self, D : Derivative) -> torch.Tensor:
+        """ This function returns D(w) evalauated on the set of Coordinates we
+        used to intialize w. This assumes we already evaluated D(w) using
+        the Add_Derivative method.
 
         ------------------------------------------------------------------------
         Arguments:
@@ -161,7 +226,16 @@ class Weight_Function(torch.nn.Module):
         The entry of self.Derivatives corresponding to D. This should be an
         1D array whose entries are D(w) at some set of coordinates. """
 
-        return self.Derivatives[tuple(D.Encoding)];
+        # First, get D(w) at self.Support_Coords.
+        Dw_Support_Coords : torch.Tensor = self.Derivatives[tuple(D.Encoding)];
+
+        # Next, extrpolate this derivative to the original set of Coordinates
+        # we used to initialize w.
+        Dw : torch.Tensor           = torch.zeros(self.Num_Coords, dtype = torch.float32);
+        Dw[self.Support_Indices]    = Dw_Support_Coords;
+
+        # All done!
+        return Dw
 
 
 
