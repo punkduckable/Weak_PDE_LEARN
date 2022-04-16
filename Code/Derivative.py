@@ -37,10 +37,9 @@ class Derivative():
         # check that Encoding is a 1D array.
         assert(len(Encoding.shape) == 1);
 
-        # Determine number of spatial variables. Currently, we only support
-        # one two or three spatial variables.
-        Num_Spatial_Vars : int  = Encoding.size - 1;
-        assert(Num_Spatial_Vars == 1 or Num_Spatial_Vars == 2 or Num_Spatial_Vars == 3);
+        # Determine input dimension. Currently, we only support n = 2, 3, 4.
+        Input_Dim : int  = Encoding.size;
+        assert(Input_Dim == 1 or Input_Dim == 2 or Input_Dim == 3);
 
         # Calculate the order (total number of patial derivatives) of this
         # derivative operator.

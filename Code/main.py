@@ -32,7 +32,7 @@ def main():
             # First, print the setting nane.
             print("%-25s = " % Setting, end = '');
 
-            # Next, print the contents of the list, one by one. 
+            # Next, print the contents of the list, one by one.
             num_items : int = len(Value);
             for i in range(num_items - 1):
                 print(str(Value[i]) + ", ", end = '');
@@ -59,7 +59,7 @@ def main():
                                     Device       = Settings.Device);
 
     # Get the number of input dimensions.
-    Settings.Num_Spatial_Dimensions : int = Data_Container.Input_Bounds.shape[0] - 1;
+    Settings.Num_Dimensions : int = Data_Container.Input_Bounds.shape[0];
 
 
 
@@ -69,7 +69,7 @@ def main():
     U = Neural_Network(
             Num_Hidden_Layers   = Settings.Num_Hidden_Layers,
             Neurons_Per_Layer   = Settings.Units_Per_Layer,
-            Input_Dim           = Settings.Num_Spatial_Dimensions + 1,
+            Input_Dim           = Settings.Num_Dimensions,
             Output_Dim          = 1,
             Activation_Function = Settings.Activation_Function,
             Device              = Settings.Device);
