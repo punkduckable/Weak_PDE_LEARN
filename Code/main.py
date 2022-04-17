@@ -51,22 +51,35 @@ def main():
     ############################################################################
     # Set up Data
     # This sets up the testing/training inputs/targets, and the input bounds.
-    # This will also tell us the number of spatial dimensions (there's a row of
-    # Input_Bounds for each coordinate component. Since one coordinate is for
-    # time, one minus the number of rows gives the number of spatial dimensions).
+    # This will also tell us the number of dimensions (there's a row of
+    # Input_Bounds for each coordinate component. We can also determine the
+    # highest order derivatives with respect to each variable. We will need this
+    # information to set up the weight functions.
 
     Data_Container = Data_Loader(   DataSet_Name = Settings.DataSet_Name,
                                     Device       = Settings.Device);
 
+    Num_RHS_Terms : int = len(Settings.RHS_Terms);
+
     # Get the number of input dimensions.
     Settings.Num_Dimensions : int = Data_Container.Input_Bounds.shape[0];
+
+    # Get the highest order derivative with respect to each variable.
+    Max_Derivatives : numpy.ndarray = Settings.LHS_Term.Derivative.Encoding.copy();
+
+    for i in range(Num_RHS_Terms):
+        D_i : Derivative = Settings.RHS_Terms[i].Derivative;
+
+        for j in range(Settings.Num_Dimensions):
+            if(D_i.Encoding[j] > Max_Derivatives[j]):
+                Max_Derivatives[j] = D_i.Encoding[j];
 
 
     ############################################################################
     # Set up Quadrature points, Volume.
     # To do this, we place a grid on the problem domain.
 
-    Gridlines_Per_Axis  : int           = 300;
+    Gridlines_Per_Axis  : int           = 100;
     Bounds              : numpy.ndarray = Data_Container.Input_Bounds;
 
     Grid_Coords : torch.tensor = Setup_Grid(
@@ -86,7 +99,7 @@ def main():
     # domain. We place the centers of each weight function such that its
     # support lies in the interior of the problem domain.
 
-    print("Reminder: Replace the \"Setup Weight Functions\" code with something better...");
+    print("Reminder: Replace the \"Setup Weight Functions\" code with something better...", end = '');
 
     Num_Weight_Functions : int = 50;
 
@@ -116,12 +129,17 @@ def main():
                                 Num_Points = Num_Weight_Functions,
                                 Device     = Settings.Device);
 
+    # Set Powers (one  more than the highest order derivative for each variable)
+    Powers_np   : numpy.ndarray = numpy.add(Max_Derivatives, 1);
+    Powers      : torch.Tensor  = torch.from_numpy(Powers_np);
+
     # Set up the weight functions.
     Weight_Functions = [];
     for i in range(Num_Weight_Functions):
         w_i = Weight_Function(
                     X_0     = Centers[i],
                     r       = Radius,
+                    Powers  = Powers,
                     Coords  = Grid_Coords);
 
         Weight_Functions.append(w_i);
@@ -129,8 +147,6 @@ def main():
 
     ############################################################################
     # Compute weight function derivatives.
-
-    Num_RHS_Terms : int = len(Settings.RHS_Terms);
 
     for i in range(Num_Weight_Functions):
         w_i = Weight_Functions[i];
@@ -322,6 +338,9 @@ def main():
     print(" = ", end = '');
 
     for i in range(Num_RHS_Terms - 1):
+        if(Pruned_Xi[i] == 0):
+            continue;
+
         print("%f*(" % Pruned_Xi[i], end = '');
         print(Settings.RHS_Terms[i], end = '');
         print(") + ", end = '');

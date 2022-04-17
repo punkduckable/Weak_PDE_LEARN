@@ -138,17 +138,20 @@ def main():
 
 
     ############################################################################
+    # Initialize Derivative operator.
+
+    D = Derivative(Encoding = numpy.array([0, 0, 2, 1], dtype = numpy.int32));
+
+
+    ############################################################################
     # Initialize weight function
 
     w : Weight_Function = Weight_Function(  X_0     = Center,
                                             r       = Radius,
+                                            Powers  = torch.from_numpy(D.Encoding + 1),
                                             Coords  = Coords);
 
 
-    ############################################################################
-    # Initialize Derivative operator.
-
-    D = Derivative(Encoding = numpy.array([0, 0, 1, 1], dtype = numpy.int32));
 
     ############################################################################
     # Plot!!!

@@ -39,7 +39,7 @@ class Derivative():
 
         # Determine input dimension. Currently, we only support n = 2, 3, 4.
         Input_Dim : int  = Encoding.size;
-        assert(Input_Dim == 1 or Input_Dim == 2 or Input_Dim == 3);
+        assert(Input_Dim == 2 or Input_Dim == 3 or Input_Dim == 4);
 
         # Calculate the order (total number of patial derivatives) of this
         # derivative operator.
