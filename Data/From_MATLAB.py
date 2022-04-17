@@ -1,10 +1,13 @@
 import numpy;
 import random;
 import scipy.io;
+import matplotlib.pyplot as pyplot;
 
 from Create_Data_Set import Create_Data_Set;
 
 
+
+Make_Plot : bool = False;
 
 def main():
     # Specify settings.
@@ -90,6 +93,23 @@ def From_MATLAB_1D( Data_File_Name      : str,
     # Generate the grid of (t, x) coordinates. The i,j entry of usol should
     # hold the value of the solution at the i,j coordinate.
     t_coords_matrix, x_coords_matrix = numpy.meshgrid(t_points, x_points);
+
+    if(Make_Plot == True):
+        epsilon : float = .0001;
+        Data_min : float = numpy.min(Noisy_Data_Set) - epsilon;
+        Data_max : float = numpy.max(Noisy_Data_Set) + epsilon;
+
+        # Plot!
+        pyplot.contourf(    t_coords_matrix,
+                            x_coords_matrix,
+                            Noisy_Data_Set,
+                            levels      = numpy.linspace(Data_min, Data_max, 500),
+                            cmap        = pyplot.cm.jet);
+
+        pyplot.colorbar();
+        pyplot.xlabel("t");
+        pyplot.ylabel("x");
+        pyplot.show();
 
     # Now, stitch successive the rows of the coordinate matrices together
     # to make a 1D array. We interpert the result as a 1 column matrix.
