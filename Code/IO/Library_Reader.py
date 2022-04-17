@@ -30,7 +30,7 @@ def Parse_Trial_Function(Buffer : str):
     Buffer: This should be a string that contains a representation of the
     Library term we want to read. In general, this will be of the form
         S_1(U)*S_2(U)*...*S_K(U)
-    Currently, we require each S_i(U) to be either U, or U^p, for some power p.
+    Currently, we require each S_i(U) to be either 1, U, or U^p, for some p > 1.
     We may weaken this constraint in the future. There should be no whitespace
     in this expression. """
 
@@ -46,7 +46,9 @@ def Parse_Trial_Function(Buffer : str):
         # cases separatly.
         if  ('^' in Components[i]):
             Power += int(Components[i][-1]);
-        else:
+        elif(Components[i] == "1"):
+            Power += 0;
+        elif(Components[i] == "U"):
             Power += 1;
 
     # Now that we know the power, form the Trial Function and return.
@@ -184,11 +186,11 @@ def Read_Library(File_Path : str) -> Tuple[Library_Term, List[Library_Term]]:
     # First, open the file.
     File = open(File_Path, 'r');
 
-    # Next, read the RHS Term. This is the first Library term in the file.
-    RHS_Term : Library_Term = Read_Library_Term(File);
+    # Next, read the LHS Term. This is the first Library term in the file.
+    LHS_Term : Library_Term = Read_Library_Term(File);
 
-    # Finally, read the LHS Terms.
-    LHS_Terms : List[Library_Term] = [];
+    # Finally, read the RHS Terms.
+    RHS_Terms : List[Library_Term] = [];
     while(True):
         try:
             Term : Library_Term = Read_Library_Term(File);
@@ -197,11 +199,11 @@ def Read_Library(File_Path : str) -> Tuple[Library_Term, List[Library_Term]]:
             break;
         else:
             # Otherwise, add the new term to the LHS_Terms list.
-            LHS_Terms.append(Term);
+            RHS_Terms.append(Term);
 
     # All done!
     File.close();
-    return RHS_Term, LHS_Terms;
+    return LHS_Term, RHS_Terms;
 
 
 

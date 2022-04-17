@@ -44,8 +44,9 @@ def Plot_Bump(  w       : Weight_Function,
     grid_w_Coords    : numpy.ndarray = w_Coords.reshape(100, 100);
 
     # Get min and max of w_Coords. We will use this to set up colors plot colors.
-    w_Coords_min : float = numpy.min(grid_w_Coords);
-    w_Coords_max : float = numpy.max(grid_w_Coords);
+    epsilon : float = .0001;
+    w_Coords_min : float = numpy.min(grid_w_Coords) - epsilon;
+    w_Coords_max : float = numpy.max(grid_w_Coords) + epsilon;
 
     # Plot!
     pyplot.contourf(    grid_Dim0_Coords,

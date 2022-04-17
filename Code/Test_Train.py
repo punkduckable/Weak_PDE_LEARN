@@ -2,20 +2,23 @@ import  numpy       as np;
 import  torch;
 from    typing      import List, Tuple;
 
-from Network        import Neural_Network;
-from Loss           import Data_Loss, Weak_Form_Loss, Lp_Loss;
-from Library_Term   import Library_Term;
+from Network            import Neural_Network;
+from Loss               import Data_Loss, Weak_Form_Loss, Lp_Loss;
+from Library_Term       import Library_Term;
+from Weight_Function    import Weight_Function;
 
 
 
 def Training(
         U                                   : Neural_Network,
         Xi                                  : torch.Tensor,
-        Coll_Points                         : torch.Tensor,
         Inputs                              : torch.Tensor,
         Targets                             : torch.Tensor,
         LHS_Term                            : Library_Term,
         RHS_Terms                           : List[Library_Term],
+        Grid_Coords                         : torch.Tensor,
+        V                                   : float,
+        Weight_Functions                    : List[Weight_Function],
         p                                   : float,
         Lambda                              : float,
         Optimizer                           : torch.optim.Optimizer,
@@ -52,8 +55,15 @@ def Training(
     RHS_Terms: A list of the Library terms (trial function + derivative)
     that appear in the right hand side of the PDE.
 
-    Highest_Order_Spatial_Derivatives: The highest order spatial partial
-    derivatives of U that are present in the library terms.
+    Grid_Coords: A 2D array whose ith row holds the coordinates of the ith
+    girdpoint on the grid used to compute the integrals in the weak form loss.
+
+    V: The volume of any sub-rectangle in the grid of quadrature points. We
+    assume that along any dimension, the gird lines are uniformly spaced,
+    meaning that every sub-rectangle engendered by the grid has the same
+    volume. V is that volume.
+
+    Weight_Functions: A list of the weight functions in the weak form loss.
 
     Index_to_Derivatives: A mapping which sends sub-index values to spatial
     partial derivatives. This is needed to build the library in Coll_Loss.
@@ -87,7 +97,13 @@ def Training(
             Optimizer.zero_grad();
 
         # Evaluate the Loss
-        Loss = (Weak_Form_Loss()
+        Loss = (Weak_Form_Loss( U                   = U,
+                                Xi                  = Xi,
+                                LHS_Term            = LHS_Term,
+                                RHS_Terms           = RHS_Terms,
+                                Grid_Coords         = Grid_Coords,
+                                V                   = V,
+                                Weight_Functions    = Weight_Functions)
 
                 +
 
@@ -118,9 +134,11 @@ def Testing(
         Xi                                  : Neural_Network,
         Inputs                              : torch.Tensor,
         Targets                             : torch.Tensor,
-        Time_Derivative_Order               : int,
         LHS_Term                            : Library_Term,
         RHS_Terms                           : List[Library_Term],
+        Grid_Coords                         : torch.Tensor,
+        V                                   : float,
+        Weight_Functions                    : List[Weight_Function],
         p                                   : float,
         Lambda                              : float,
         Device                              : torch.device = torch.device('cpu')) -> Tuple[float, float]:
@@ -161,6 +179,16 @@ def Testing(
     RHS_Terms: A list of the Library terms (trial function + derivative)
     that appear in the right hand side of the PDE.
 
+    Grid_Coords: A 2D array whose ith row holds the coordinates of the ith
+    girdpoint on the grid used to compute the integrals in the weak form loss.
+
+    V: The volume of any sub-rectangle in the grid of quadrature points. We
+    assume that along any dimension, the gird lines are uniformly spaced,
+    meaning that every sub-rectangle engendered by the grid has the same
+    volume. V is that volume.
+
+    Weight_Functions: A list of the weight functions in the weak form loss.
+
     p, Lambda: the settings value for p and Lambda (in the loss function).
 
     Device: The device for Sol_NN and PDE_NN.
@@ -176,15 +204,22 @@ def Testing(
 
     # Get the losses
     Data_Loss_Value : float  = Data_Loss(
-            U           = U,
-            Inputs      = Inputs,
-            Targets     = Targets).item();
+                                U           = U,
+                                Inputs      = Inputs,
+                                Targets     = Targets).item();
 
-    Weak_Form_Loss_Value : float = Weak_Form_Loss();
+    Weak_Form_Loss_Value : float = Weak_Form_Loss(
+                                        U                   = U,
+                                        Xi                  = Xi,
+                                        LHS_Term            = LHS_Term,
+                                        RHS_Terms           = RHS_Terms,
+                                        Grid_Coords         = Grid_Coords,
+                                        V                   = V,
+                                        Weight_Functions    = Weight_Functions).item()
 
     Lambda_Lp_Loss_Value : float = Lambda*Lp_Loss(
-            Xi    = Xi,
-            p     = p).item();
+                                            Xi    = Xi,
+                                            p     = p).item();
 
     # Return the losses.
     return (Data_Loss_Value, Weak_Form_Loss_Value, Lambda_Lp_Loss_Value);

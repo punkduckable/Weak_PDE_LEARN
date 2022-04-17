@@ -195,14 +195,15 @@ class Weight_Function(torch.nn.Module):
 
         # First, check if we've already evaluated D(w).
         if(tuple(D.Encoding) in self.Derivatives):
-            print(D + "w already in Derivatives dictionary.");
+            #print(D, end = '');
+            #print("(w) already in Derivatives dictionary.");
             return;
 
         # If not, then let's calculate it.
         Dw : torch.Tensor = Evaluate_Derivative(    w       = self,
                                                     D       = D,
                                                     Coords  = self.Supported_Coords);
-        self.Derivatives[tuple(D.Encoding)] = Dw;
+        self.Derivatives[tuple(D.Encoding)] = Dw.detach();
 
         # All done!
         return;

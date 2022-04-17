@@ -18,7 +18,9 @@ from Loss               import Data_Loss, Lp_Loss, Weak_Form_Loss;
 from Network            import Rational, Neural_Network;
 from Data_Loader        import Data_Loader;
 from Test_Train         import Testing, Training;
-from Points             import Generate_Points;
+from Points             import Generate_Points, Setup_Grid;
+from Weight_Function    import Weight_Function;
+
 
 
 
@@ -41,8 +43,6 @@ def main():
         else:
             print(("%-25s = " % Setting) + str(Value));
 
-    exit();
-
     # Start a setup timer.
     Setup_Timer : float = time.perf_counter();
     print("Setting up... ", end = '');
@@ -61,6 +61,86 @@ def main():
     # Get the number of input dimensions.
     Settings.Num_Dimensions : int = Data_Container.Input_Bounds.shape[0];
 
+
+    ############################################################################
+    # Set up Quadrature points, Volume.
+    # To do this, we place a grid on the problem domain.
+
+    Gridlines_Per_Axis  : int           = 300;
+    Bounds              : numpy.ndarray = Data_Container.Input_Bounds;
+
+    Grid_Coords : torch.tensor = Setup_Grid(
+                                    Gridlines_Per_Axis  = Gridlines_Per_Axis,
+                                    Num_Dimensions      = Settings.Num_Dimensions,
+                                    Bounds              = Bounds);
+
+    # Find volume.
+    V : float = 1;
+    for i in range(Settings.Num_Dimensions):
+        V *= (Bounds[i, 1] - Bounds[i, 0])/float(Gridlines_Per_Axis);
+
+
+    ############################################################################
+    # Set up weight functions.
+    # This is demo code. We randomly spawn weight functions in the problem
+    # domain. We place the centers of each weight function such that its
+    # support lies in the interior of the problem domain.
+
+    print("Reminder: Replace the \"Setup Weight Functions\" code with something better...");
+
+    Num_Weight_Functions : int = 50;
+
+    Min_Side_Length : float = Bounds[0, 1] - Bounds[0, 0];
+    for i in range(1, Settings.Num_Dimensions):
+        if(Bounds[i, 1] - Bounds[i, 0] < Min_Side_Length):
+            Min_Side_Length = Bounds[i, 1] - Bounds[i, 0];
+
+    # Set up radius.
+    Radius  : float = Min_Side_Length/4.;
+
+    # Set up weight function centers.
+    # If the problem domain is [a_1, b_1] x ... x [a_n, b_n], then we place the
+    # centers in [a_1 + r + e, b_1 - r - e] x ... x [a_n - r + e, b_n - r - e],
+    # where e = Epsilon is some small positive number (to ensure the weight
+    # function support is in the domain).
+    Epsilon         : float         = 0.00001;
+    Trimmed_Bounds  : numpy.ndarry  = numpy.empty_like(Bounds);
+
+    for i in range(Settings.Num_Dimensions):
+        Trimmed_Bounds[i, 0] = Bounds[i, 0] + Radius + Epsilon;
+        Trimmed_Bounds[i, 1] = Bounds[i, 1] - Radius - Epsilon;
+
+    # Generate Centers.
+    Centers : numpy.ndarray = Generate_Points(
+                                Bounds     = Trimmed_Bounds,
+                                Num_Points = Num_Weight_Functions,
+                                Device     = Settings.Device);
+
+    # Set up the weight functions.
+    Weight_Functions = [];
+    for i in range(Num_Weight_Functions):
+        w_i = Weight_Function(
+                    X_0     = Centers[i],
+                    r       = Radius,
+                    Coords  = Grid_Coords);
+
+        Weight_Functions.append(w_i);
+
+
+    ############################################################################
+    # Compute weight function derivatives.
+
+    Num_RHS_Terms : int = len(Settings.RHS_Terms);
+
+    for i in range(Num_Weight_Functions):
+        w_i = Weight_Functions[i];
+
+        # First, add the LHS Term derivative.
+        w_i.Add_Derivative(Settings.LHS_Term.Derivative);
+
+        # Now add the derivatives from the RHS Terms.
+        for j in range(Num_RHS_Terms):
+            w_i.Add_Derivative(Settings.RHS_Terms[j].Derivative);
 
 
     ############################################################################
@@ -81,7 +161,7 @@ def main():
     # we can distinguish it from regular Tensors. In particular, optimizers
     # expect a list or dictionary of Parameters... not Tensors. Since we want
     # to train Xi, we set it up as a Parameter.
-    Xi = torch.zeros(   Num_Library_Terms + 1,
+    Xi = torch.zeros(   Num_RHS_Terms,
                         dtype           = torch.float32,
                         device          = Settings.Device,
                         requires_grad   = True);
@@ -148,20 +228,16 @@ def main():
     print("Running %d epochs..." % Settings.Num_Epochs);
 
     for t in range(Settings.Num_Epochs):
-        # First, generate new training collocation points.
-        Train_Coll_Points = Generate_Points(
-                        Bounds      = Data_Container.Input_Bounds,
-                        Num_Points  = Settings.Num_Train_Coll_Points,
-                        Device      = Settings.Device);
-
-        # Now run a Training Epoch.
+        # Run a Training Epoch.
         Training(   U                                   = U,
                     Xi                                  = Xi,
-                    Coll_Points                         = Train_Coll_Points,
                     Inputs                              = Data_Container.Train_Inputs,
                     Targets                             = Data_Container.Train_Targets,
-                    LHS_Term                            = Library.LHS_Term,
-                    RHS_Terms                           = Library.RHS_Terms,
+                    LHS_Term                            = Settings.LHS_Term,
+                    RHS_Terms                           = Settings.RHS_Terms,
+                    Grid_Coords                         = Grid_Coords,
+                    V                                   = V,
+                    Weight_Functions                    = Weight_Functions,
                     p                                   = Settings.p,
                     Lambda                              = Settings.Lambda,
                     Optimizer                           = Optimizer,
@@ -170,21 +246,17 @@ def main():
         # Test the code (and print the loss) every 10 Epochs. For all other
         # epochs, print the Epoch to indicate the program is making progress.
         if(t % 10 == 0 or t == Settings.Num_Epochs - 1):
-            # Generate new testing Collocation Coordinates
-            Test_Coll_Points = Generate_Points(
-                            Bounds      = Data_Container.Input_Bounds,
-                            Num_Points  = Settings.Num_Test_Coll_Points,
-                            Device      = Settings.Device);
-
             # Evaluate losses on training points.
             (Train_Data_Loss, Train_Coll_Loss, Train_Lp_Loss) = Testing(
                 U                                   = U,
                 Xi                                  = Xi,
-                Coll_Points                         = Train_Coll_Points,
                 Inputs                              = Data_Container.Train_Inputs,
                 Targets                             = Data_Container.Train_Targets,
-                LHS_Term                            = Library.LHS_Term,
-                RHS_Terms                           = Library.RHS_Terms,
+                LHS_Term                            = Settings.LHS_Term,
+                RHS_Terms                           = Settings.RHS_Terms,
+                Grid_Coords                         = Grid_Coords,
+                V                                   = V,
+                Weight_Functions                    = Weight_Functions,
                 p                                   = Settings.p,
                 Lambda                              = Settings.Lambda,
                 Device                              = Settings.Device);
@@ -193,18 +265,20 @@ def main():
             (Test_Data_Loss, Test_Weak_Form_Loss, Test_Lp_Loss) = Testing(
                 U                                   = U,
                 Xi                                  = Xi,
-                Coll_Points                         = Test_Coll_Points,
                 Inputs                              = Data_Container.Test_Inputs,
                 Targets                             = Data_Container.Test_Targets,
-                LHS_Term                            = Library.LHS_Term,
-                RHS_Terms                           = Library.RHS_Terms,
+                LHS_Term                            = Settings.LHS_Term,
+                RHS_Terms                           = Settings.RHS_Terms,
+                Grid_Coords                         = Grid_Coords,
+                V                                   = V,
+                Weight_Functions                    = Weight_Functions,
                 p                                   = Settings.p,
                 Lambda                              = Settings.Lambda,
                 Device                              = Settings.Device);
 
             # Print losses!
             print("Epoch #%-4d | Test: \t Data = %.7f\t Weak = %.7f\t Lp = %.7f \t Total = %.7f"
-                % (t, Test_Data_Loss, Test_Weak_Form_Loss, Test_Lp_Loss, Test_Data_Loss + Test_Coll_Loss + Test_Lp_Loss));
+                % (t, Test_Data_Loss, Test_Weak_Form_Loss, Test_Lp_Loss, Test_Data_Loss + Test_Weak_Form_Loss + Test_Lp_Loss));
             print("            | Train:\t Data = %.7f\t Weak = %.7f\t Lp = %.7f \t Total = %.7f"
                 % (Train_Data_Loss, Test_Weak_Form_Loss, Train_Lp_Loss, Train_Data_Loss + Test_Weak_Form_Loss + Train_Lp_Loss));
         else:
@@ -231,12 +305,6 @@ def main():
 
 
     ############################################################################
-    # Report final PDE
-
-    print("If you're reading this, then Robert fogot to write the code that prints the final PDE")
-
-
-    ############################################################################
     # Save.
 
     if(Settings.Save_State == True):
@@ -245,6 +313,22 @@ def main():
                     "Xi"        : Xi,
                     "Optimizer" : Optimizer.state_dict()},
                     Save_File_Path);
+
+
+    ############################################################################
+    # Report final PDE
+
+    print(Settings.LHS_Term, end = '');
+    print(" = ", end = '');
+
+    for i in range(Num_RHS_Terms - 1):
+        print("%f*(" % Pruned_Xi[i], end = '');
+        print(Settings.RHS_Terms[i], end = '');
+        print(") + ", end = '');
+
+    print("%f*(" % Pruned_Xi[-1], end = '');
+    print(Settings.RHS_Terms[-1], end = '');
+    print(")");
 
 
 

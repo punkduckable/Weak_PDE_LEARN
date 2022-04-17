@@ -38,20 +38,20 @@ def Test_Integrate() -> None:
     Bounds[:, 0]                = -3;
     Bounds[:, 1]                = 3;
 
-    Gridlines_per_axis : int    = 200;
-    Coords  : torch.Tensor      = torch.empty([Gridlines_per_axis, Gridlines_per_axis, Gridlines_per_axis, n], dtype = torch.float32);
+    Gridlines_Per_Axis : int    = 200;
+    Coords  : torch.Tensor      = torch.empty([Gridlines_Per_Axis, Gridlines_Per_Axis, Gridlines_Per_Axis, n], dtype = torch.float32);
 
-    x_Values : numpy.ndarray    = numpy.linspace(start = Bounds[0, 0], stop = Bounds[0, 1], num = Gridlines_per_axis, dtype = numpy.float32);
-    y_Values : numpy.ndarray    = numpy.linspace(start = Bounds[1, 0], stop = Bounds[1, 1], num = Gridlines_per_axis, dtype = numpy.float32);
-    z_Values : numpy.ndarray    = numpy.linspace(start = Bounds[2, 0], stop = Bounds[2, 1], num = Gridlines_per_axis, dtype = numpy.float32);
+    x_Values : numpy.ndarray    = numpy.linspace(start = Bounds[0, 0], stop = Bounds[0, 1], num = Gridlines_Per_Axis, dtype = numpy.float32);
+    y_Values : numpy.ndarray    = numpy.linspace(start = Bounds[1, 0], stop = Bounds[1, 1], num = Gridlines_Per_Axis, dtype = numpy.float32);
+    z_Values : numpy.ndarray    = numpy.linspace(start = Bounds[2, 0], stop = Bounds[2, 1], num = Gridlines_Per_Axis, dtype = numpy.float32);
 
-    for i in range(Gridlines_per_axis):
+    for i in range(Gridlines_Per_Axis):
         Coords[i, :, :, 0] = x_Values[i].item();
 
-        for j in range(Gridlines_per_axis):
+        for j in range(Gridlines_Per_Axis):
             Coords[i, j, :, 1] = y_Values[j].item();
 
-            for k in range(Gridlines_per_axis):
+            for k in range(Gridlines_Per_Axis):
                 Coords[i, j, k, 2] = z_Values[k].item();
 
     # Reshape into a 2D array
@@ -77,10 +77,10 @@ def Test_Integrate() -> None:
     w.Add_Derivative(D = D);
 
     # We will integrate D(w) over Coords. For this, we need an array of ones.
-    FU_Grid : torch.Tensor = torch.empty([Gridlines_per_axis, Gridlines_per_axis, Gridlines_per_axis], dtype = torch.float32);
-    for i in range(Gridlines_per_axis):
-        for j in range(Gridlines_per_axis):
-            for k in range(Gridlines_per_axis):
+    FU_Grid : torch.Tensor = torch.empty([Gridlines_Per_Axis, Gridlines_Per_Axis, Gridlines_Per_Axis], dtype = torch.float32);
+    for i in range(Gridlines_Per_Axis):
+        for j in range(Gridlines_Per_Axis):
+            for k in range(Gridlines_Per_Axis):
                 FU_Grid[i, j, k] = (x_Values[i].item()*x_Values[i].item() +
                                     y_Values[j].item()*y_Values[j].item() +
                                     z_Values[k].item()*z_Values[k].item());

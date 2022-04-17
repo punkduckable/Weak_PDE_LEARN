@@ -137,10 +137,10 @@ def Settings_Reader() -> Settings_Container:
     # Where is the file that lists the library functions / derivatives?
     Library_File_Name : str = Read_Setting(File, "Library File [str]:");
     Library_Path      : str = "../" + Library_File_Name + ".txt";
-    RHS_Term, LHS_Terms     = Read_Library(Library_Path);
+    LHS_Term, RHS_Terms     = Read_Library(Library_Path);
 
-    Settings.RHS_Term       = RHS_Term;
-    Settings.LHS_Terms      = LHS_Terms;
+    Settings.LHS_Term      = LHS_Term;
+    Settings.RHS_Terms     = RHS_Terms;
 
 
 

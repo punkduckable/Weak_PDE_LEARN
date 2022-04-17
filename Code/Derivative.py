@@ -74,7 +74,7 @@ class Derivative():
             Buffer += ("D_x^%u " % self.Encoding[1]);
 
         # y derivative (if it exists)
-        Num_Spatial_Vars : int = Encoding.size - 1;
+        Num_Spatial_Vars : int = self.Encoding.size - 1;
         if(Num_Spatial_Vars > 1):
             if  (self.Encoding[2] == 1):
                 Buffer += "D_y ";
