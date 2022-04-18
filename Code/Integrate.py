@@ -1,3 +1,14 @@
+# Nonsense to add Classes diectory to the Python search path.
+import os
+import sys
+
+# Get path to Code, Classes directories.
+Code_Path       = os.path.dirname(os.path.abspath(__file__));
+Classes_Path    = os.path.join(Code_Path, "Classes");
+
+# Add the Classes directory to the python path.
+sys.path.append(Classes_Path);
+
 import torch;
 
 from Weight_Function    import Weight_Function;

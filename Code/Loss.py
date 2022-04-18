@@ -1,3 +1,14 @@
+# Nonsense to add Classes diectory to the Python search path.
+import os
+import sys
+
+# Get path to Code, Classes directories.
+Code_Path       = os.path.dirname(os.path.abspath(__file__));
+Classes_Path    = os.path.join(Code_Path, "Classes");
+
+# Add the Classes directory to the python path.
+sys.path.append(Classes_Path);
+
 import numpy;
 import torch;
 import math;
@@ -72,9 +83,9 @@ def Weak_Form_Loss( U                   : Neural_Network,
 
     This function calculates the left and right of the expression above for each
     function in Weight_Functions. This gives us a system of linear equations in
-    the components of Xi. We report the least squares residual of this system.
-    In particular, this function calculates ||b - A*Xi||_2^2, where
-    A \in R^{n x m} is the matrix whose i,j entry holds an approximation to the
+    the components of Xi. We report the mean square error of this system.
+    In particular, this function calculates (1/m)||b - A*Xi||_2^2, where
+    A \in R^{m x n} is the matrix whose i,j entry holds an approximation to the
     integral
             \int_{\Omega} w_i(X) D_j F_j(U(X)) dX.
     That is, A_{i,j} holds the value of the integral of the jth library term
@@ -149,7 +160,7 @@ def Weak_Form_Loss( U                   : Neural_Network,
 
     ############################################################################
     # Construct the loss.
-    # The loss takes the form ||A \xi - b||_2^2, where b \in R^M (M = Number of
+    # The loss takes the form (1/m)||A \xi - b||_2^2, where b \in R^M (M = Number of
     # weight functions) is defined by
     #       b_i = \int w_i(X) D(F(U(X))) dX
     # where w_i is the ith weight function and D(F(U)) is the RHS term.
@@ -177,17 +188,19 @@ def Weak_Form_Loss( U                   : Neural_Network,
         F_j : Trial_Function    = RHS_Terms[j].Trial_Function;
         A_j : torch.Tensor      = torch.empty(m, dtype = torch.float32);
 
-
         for i in range(m):
             A_j[i]  = Integrate(w               = Weight_Functions[i],
                                 D               = D_j,
                                 FU_Partition    = U_Partition_Powers[F_j.Power],
                                 V               = V);
+        #print(RHS_Terms[j]);
+        #print(U_Partition_Powers[F_j.Power]);
+        #print(A_j);
 
         A_Xi += torch.multiply(A_j, Xi[j]);
 
-    # Compute loss! (this is ||A \xi - b ||_2^2).
-    return torch.sum((b - A_Xi)**2);
+    # Compute loss! (this is (1/m)||A \xi - b ||_2^2).
+    return (torch.sum((b - A_Xi)**2))/float(m);
 
 
 

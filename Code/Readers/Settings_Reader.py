@@ -129,10 +129,7 @@ def Settings_Reader() -> Settings_Container:
 
 
     ############################################################################
-    # PDE settings.
-
-    # The order of the time derivative on the left-hand side of the PDE.
-    Settings.Time_Derivative_Order = int(Read_Setting(File, "Time Derivative Order [int]:"));
+    # Library Settings.
 
     # Where is the file that lists the library functions / derivatives?
     Library_File_Name : str = Read_Setting(File, "Library File [str]:");

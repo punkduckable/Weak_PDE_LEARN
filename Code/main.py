@@ -1,13 +1,15 @@
-# Nonsense to add IO diectory to the Python search path.
+# Nonsense to add Readers, Classes directories to the Python search path.
 import os
 import sys
 
-# Get path to Code, IO directories.
-Code_Path   = os.path.dirname(os.path.abspath(__file__));
-IO_Path     = os.path.join(Code_Path, "IO");
+# Get path to Code, Readers, Classes directories.
+Code_Path       = os.path.dirname(os.path.abspath(__file__));
+Readers_Path    = os.path.join(Code_Path, "Readers");
+Classes_Path    = os.path.join(Code_Path, "Classes");
 
-# Add the IO directory to the python path.
-sys.path.append(IO_Path);
+# Add the Readers, Classes directories to the python path.
+sys.path.append(Readers_Path);
+sys.path.append(Classes_Path);
 
 import numpy;
 import torch;
@@ -123,7 +125,6 @@ def main():
                                 Bounds     = Trimmed_Bounds,
                                 Num_Points = Settings.Num_Weight_Functions,
                                 Device     = Settings.Device);
-
 
     # Set Powers (one  more than the highest order derivative for each variable)
     Powers_np   : numpy.ndarray = numpy.add(Max_Derivatives, 1);

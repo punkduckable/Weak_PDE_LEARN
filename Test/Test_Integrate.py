@@ -3,11 +3,15 @@ import os
 import sys
 
 # Get path to parent directory
-parent_dir  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)));
+Main_Path  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)));
 
-# Add the Code directory to the python path.
-Code_path   = os.path.join(parent_dir, "Code");
+# Get the path to the Code, Classes directories.
+Code_Path       = os.path.join(Main_Path, "Code");
+Classes_Path    = os.path.join(Code_Path, "Classes");
+
+# Add these directories to Python's search path.
 sys.path.append(Code_path);
+sys.path.append(Classes_Path);
 
 # external libraries and stuff.
 import numpy;
