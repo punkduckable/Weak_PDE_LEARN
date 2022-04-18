@@ -6,18 +6,21 @@
 # valued functions of U (NOT its derivatives). We call these "Trial functions".
 #  D^{(0)}, ... , D^{(K)} are partial derivative operators. We call terms of the
 # form D^{(i)} F_i(U) a "Library term". We call the term D^{(0)} F_0(U) the
-# "Right Hand Side Term" or "RHS Term" for short, and the terms D^{(i)} F_i(U),
-# for i >= 1, the "Left Hand Side Terms" or "LHS Terms" for short.
+# "LEft Hand Side Term" or "LHS Term" for short, and the terms D^{(i)} F_i(U),
+# for i >= 1, the "Right Hand Side Terms" or "RHS Terms" for short.
 #
-# This file specifies Library terms. Since the RHS Term has a special
+# This file specifies Library terms. Since the LHS Term has a special
 # designation, we specify it separately. Each trial function must be a power
-# of U (I may weaken this requirement in the future). We can recognize
-# expressions of the form U^p, as well as multiplicative products of U, such as
-# U*U. For example, the following examples all mean "U^3":
+# of U (I may weaken this requirement in the future). We use the constant "1"
+# as a shorthand for U^0. This program can recognize expressions of the
+# form U^p, as well as multiplicative products of U, such as U*U. For example,
+# the following examples all mean "U^3":
 #       U^3
 #       U^2*U
 #       U*U^2
 #       U*U*U
+#       1*U^3
+#       U^3*1
 # Derivatives must be expressed as a sequence of partial derivatives. Each
 # partial derivative should be of the form D_s (for first order derivatives) or
 # D_s^k (for higher order derivatives). There should be a space between each
@@ -28,15 +31,17 @@
 # If a Library term has no derivative (D^{(i)} = 1), then you simply do not
 # list one. For example, the following line specifies the Library term U^2,
 #       U^2
-# The first library term you specify is the RHS term. There can be blank lines,
+# The first library term you specify is the LHS term. There can be blank lines,
 # comments, etc between library terms. The only rules are that the library
 # terms adhere to the format above and that there is at most one library term
 # per line.
 
-# RHS Term
+# LHS Term
 D_t U
 
-# LHS Terms
+# RHS Terms
+1
+
 U
 D_x U
 D_x^2 U

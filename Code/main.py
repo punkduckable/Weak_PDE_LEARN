@@ -18,7 +18,7 @@ from Loss               import Data_Loss, Lp_Loss, Weak_Form_Loss;
 from Network            import Rational, Neural_Network;
 from Data_Loader        import Data_Loader;
 from Test_Train         import Testing, Training;
-from Points             import Generate_Points, Setup_Grid;
+from Points             import Generate_Points, Setup_Partition;
 from Weight_Function    import Weight_Function;
 
 
@@ -77,20 +77,17 @@ def main():
 
     ############################################################################
     # Set up Quadrature points, Volume.
-    # To do this, we place a grid on the problem domain.
+    # To do this, we place a uniform partition on the problem domain.
 
-    Gridlines_Per_Axis  : int           = 100;
-    Bounds              : numpy.ndarray = Data_Container.Input_Bounds;
+    Bounds      : numpy.ndarray = Data_Container.Input_Bounds;
 
-    Grid_Coords : torch.tensor = Setup_Grid(
-                                    Gridlines_Per_Axis  = Gridlines_Per_Axis,
-                                    Num_Dimensions      = Settings.Num_Dimensions,
-                                    Bounds              = Bounds);
+    Partition   : torch.tensor  = Setup_Partition(  Axis_Partition_Size = Settings.Axis_Partition_Size,
+                                                    Bounds              = Bounds);
 
     # Find volume.
     V : float = 1;
     for i in range(Settings.Num_Dimensions):
-        V *= (Bounds[i, 1] - Bounds[i, 0])/float(Gridlines_Per_Axis);
+        V *= (Bounds[i, 1] - Bounds[i, 0])/float(Settings.Axis_Partition_Size);
 
 
     ############################################################################
@@ -100,8 +97,6 @@ def main():
     # support lies in the interior of the problem domain.
 
     print("Reminder: Replace the \"Setup Weight Functions\" code with something better...", end = '');
-
-    Num_Weight_Functions : int = 50;
 
     Min_Side_Length : float = Bounds[0, 1] - Bounds[0, 0];
     for i in range(1, Settings.Num_Dimensions):
@@ -126,8 +121,9 @@ def main():
     # Generate Centers.
     Centers : numpy.ndarray = Generate_Points(
                                 Bounds     = Trimmed_Bounds,
-                                Num_Points = Num_Weight_Functions,
+                                Num_Points = Settings.Num_Weight_Functions,
                                 Device     = Settings.Device);
+
 
     # Set Powers (one  more than the highest order derivative for each variable)
     Powers_np   : numpy.ndarray = numpy.add(Max_Derivatives, 1);
@@ -135,12 +131,12 @@ def main():
 
     # Set up the weight functions.
     Weight_Functions = [];
-    for i in range(Num_Weight_Functions):
+    for i in range(Settings.Num_Weight_Functions):
         w_i = Weight_Function(
                     X_0     = Centers[i],
                     r       = Radius,
                     Powers  = Powers,
-                    Coords  = Grid_Coords);
+                    Coords  = Partition);
 
         Weight_Functions.append(w_i);
 
@@ -148,8 +144,8 @@ def main():
     ############################################################################
     # Compute weight function derivatives.
 
-    for i in range(Num_Weight_Functions):
-        w_i = Weight_Functions[i];
+    for i in range(Settings.Num_Weight_Functions):
+        w_i : weight_Function = Weight_Functions[i];
 
         # First, add the LHS Term derivative.
         w_i.Add_Derivative(Settings.LHS_Term.Derivative);
@@ -181,7 +177,6 @@ def main():
                         dtype           = torch.float32,
                         device          = Settings.Device,
                         requires_grad   = True);
-
 
 
     ############################################################################
@@ -243,7 +238,7 @@ def main():
     Epoch_Timer : float = time.perf_counter();
     print("Running %d epochs..." % Settings.Num_Epochs);
 
-    for t in range(Settings.Num_Epochs):
+    for t in range(1, Settings.Num_Epochs + 1):
         # Run a Training Epoch.
         Training(   U                                   = U,
                     Xi                                  = Xi,
@@ -251,7 +246,7 @@ def main():
                     Targets                             = Data_Container.Train_Targets,
                     LHS_Term                            = Settings.LHS_Term,
                     RHS_Terms                           = Settings.RHS_Terms,
-                    Grid_Coords                         = Grid_Coords,
+                    Partition                           = Partition,
                     V                                   = V,
                     Weight_Functions                    = Weight_Functions,
                     p                                   = Settings.p,
@@ -261,7 +256,7 @@ def main():
 
         # Test the code (and print the loss) every 10 Epochs. For all other
         # epochs, print the Epoch to indicate the program is making progress.
-        if(t % 10 == 0 or t == Settings.Num_Epochs - 1):
+        if(t % 10 == 0 or t == 1):
             # Evaluate losses on training points.
             (Train_Data_Loss, Train_Coll_Loss, Train_Lp_Loss) = Testing(
                 U                                   = U,
@@ -270,7 +265,7 @@ def main():
                 Targets                             = Data_Container.Train_Targets,
                 LHS_Term                            = Settings.LHS_Term,
                 RHS_Terms                           = Settings.RHS_Terms,
-                Grid_Coords                         = Grid_Coords,
+                Partition                           = Partition,
                 V                                   = V,
                 Weight_Functions                    = Weight_Functions,
                 p                                   = Settings.p,
@@ -285,7 +280,7 @@ def main():
                 Targets                             = Data_Container.Test_Targets,
                 LHS_Term                            = Settings.LHS_Term,
                 RHS_Terms                           = Settings.RHS_Terms,
-                Grid_Coords                         = Grid_Coords,
+                Partition                           = Partition,
                 V                                   = V,
                 Weight_Functions                    = Weight_Functions,
                 p                                   = Settings.p,
@@ -338,16 +333,16 @@ def main():
     print(" = ", end = '');
 
     for i in range(Num_RHS_Terms - 1):
-        if(Pruned_Xi[i] == 0):
-            continue;
+        if(Pruned_Xi[i] != 0):
+            print("+ %f*(" % Pruned_Xi[i], end = '');
+            print(Settings.RHS_Terms[i], end = '');
+            print(") ", end = '');
 
-        print("%f*(" % Pruned_Xi[i], end = '');
-        print(Settings.RHS_Terms[i], end = '');
-        print(") + ", end = '');
-
-    print("%f*(" % Pruned_Xi[-1], end = '');
-    print(Settings.RHS_Terms[-1], end = '');
-    print(")");
+    if(Pruned_Xi[-1] != 0):
+        print("+ %f*(" % Pruned_Xi[-1], end = '');
+        print(Settings.RHS_Terms[-1], end = '');
+        print(")", end = '');
+    print();
 
 
 

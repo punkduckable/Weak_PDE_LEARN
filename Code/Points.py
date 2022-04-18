@@ -59,19 +59,43 @@ def Generate_Points(
 
 
 
-def Setup_Grid( Gridlines_Per_Axis  : int,
-                Num_Dimensions      : int,
-                Bounds              : numpy.ndarray) -> torch.Tensor:
-    """ To do :D """
+def Setup_Partition(Axis_Partition_Size : int,
+                    Bounds              : numpy.ndarray) -> torch.Tensor:
+    """ This function sets up a uniform partition with Axis_Partition_Size
+    points along each axis. Suppose Bounds = [[a_1, b_1], ... ,[a_n, b_n]]. We
+    partition [a_i, b_i] using Axis_Partition_Size points such that successive
+    points in the partition are equally spaced ( with a spacing of
+    (b_i - a_i)/(Axis_Partition_Size - 1)). We repeat this for each dimension,
+    which yields a partition of [a_1, b_1] x ... x [a_n, b_n]. In particular,
+    this is the set of all points of the form (p_1, ... , p_n) where each
+    p_i is an element of the partition of [a_i, b_i]. Currently, this function
+    works when n = 2, 3, and 4.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    Axis_Partition_Size : The number of gird lines we want along each axis. This
+    is the size of the partition of any sub-rectangle, [a_i, b_i].
+
+    Bounds : A 2D array whose ith row is [a_i, b_i]. This function generates a
+    unifom partition on the rectangle [a_1, b_1] x ... x [a_n, b_n]. Bounds
+    defines the rectangle.
+
+    ----------------------------------------------------------------------------
+    Returns:
+
+    A 2D array whose ith row holds the coordinates of the ith partition point.
+    In particular, this array will have size (Axis_Partition_Size^n) x n. """
 
     # Alies.
-    Nd : int = Num_Dimensions
-    Ng : int = Gridlines_Per_Axis;
+    Nd : int = Bounds.shape[0];
+    Ng : int = Axis_Partition_Size;
 
     # For readability, we handle the cases of 1, 2, and 3 spatial variables
     # separately.
     if  (Nd == 2):
-        # Initialize Grids_Coords. We will return this after setting it up.
+        # Initialize a tensor to holds the partition coordinates. We will return
+        # this after setting it up.
         Coords : torch.tensor = torch.empty([Ng, Ng, Nd], dtype = torch.float32);
 
         # Determine possible t, x values.
@@ -79,16 +103,15 @@ def Setup_Grid( Gridlines_Per_Axis  : int,
         x_Values : numpy.ndarray = numpy.linspace(start = Bounds[1, 0], stop = Bounds[1, 1], num = Ng, dtype = numpy.float32);
 
         # Populate Coords.
-        for i in range(Gridlines_Per_Axis):
+        for i in range(Axis_Partition_Size):
             Coords[i, :, 0] = t_Values[i].item();
-
-            for j in range(Gridlines_Per_Axis):
-                Coords[i, j, 1] = x_Values[j].item();
+            Coords[:, i, 1] = x_Values[i].item();
 
         return Coords.view(-1, Nd);
 
     elif(Nd == 3):
-        # Initialize Grids_Coords. We will return this after setting it up.
+        # Initialize a tensor to holds the partition coordinates. We will return
+        # this after setting it up.
         Coords : torch.tensor = torch.empty([Ng, Ng, Ng, Nd], dtype = torch.float32);
 
         # Determine possible t, x values.
@@ -99,18 +122,14 @@ def Setup_Grid( Gridlines_Per_Axis  : int,
         # Populate Coords.
         for i in range(Ng):
             Coords[i, :, :, 0] = t_Values[i].item();
-
-            for j in range(Ng):
-                Coords[i, j, :, 1] = x_Values[j].item();
-
-                for k in range(Ng):
-                    Coords[i, j, k, 2] = y_Values[k].item();
-
+            Coords[:, i, :, 1] = x_Values[i].item();
+            Coords[:, :, i, 2] = y_Values[i].item();
 
         return Coords.view(-1, Nd);
 
     elif(Nd == 4):
-        # Initialize Grids_Coords. We will return this after setting it up.
+        # Initialize a tensor to holds the partition coordinates. We will return
+        # this after setting it up.
         Coords : torch.tensor = torch.empty([Ng, Ng, Ng, Ng, Nd], dtype = torch.float32);
 
         # Determine possible t, x values.
@@ -122,15 +141,9 @@ def Setup_Grid( Gridlines_Per_Axis  : int,
         # Populate Coords.
         for i in range(Ng):
             Coords[i, :, :, :, 0] = t_Values[i].item();
-
-            for j in range(Ng):
-                Coords[i, j, :, :, 1] = x_Values[j].item();
-
-                for k in range(Ng):
-                    Coords[i, j, k, :, 2] = y_Values[k].item();
-
-                    for l in range(Ng):
-                        Coords[i, j, k, l, 3] = z_Values[l].item();
+            Coords[:, i, :, :, 1] = x_Values[i].item();
+            Coords[:, :, i, :, 2] = y_Values[i].item();
+            Coords[:, :, :, i, 3] = z_Values[i].item();
 
         return Coords.view(-1, Nd);
 

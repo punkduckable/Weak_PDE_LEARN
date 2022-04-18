@@ -57,10 +57,64 @@ def Weak_Form_Loss( U                   : Neural_Network,
                     Xi                  : torch.Tensor,
                     LHS_Term            : Library_Term,
                     RHS_Terms           : List[Library_Term],
-                    Grid_Coords         : torch.Tensor,
+                    Partition           : torch.Tensor,
                     V                   : float,
                     Weight_Functions    : List[Weight_Function]) -> torch.Tensor:
-    """ To do :D """
+    """ We assume the underlying PDE is
+        DF(U) = c_1 D_1 F_1(U) + ... + c_n D_n F_n(U).
+    Since this equation is valide on the entire problem domain, Omega, we should
+    also have
+        \int_{\Omega} w DF(U) dX = \sum_{i = 1}^{n} c_i \int_{\Omega} w D_i F_i(U) dX
+    for any function , w, defined on Omega. Since the neural network, U, and
+    vector Xi approximate the system response function and coefficient vector
+    (c_1, ... , c_n), respectively, we expect that for each w,
+        \int_{\Omega} w DF(U) dX \approx \sum_{i = 1}^{n} Xi_i \int_{\Omega} w D_i F_i(U) dX
+
+    This function calculates the left and right of the expression above for each
+    function in Weight_Functions. This gives us a system of linear equations in
+    the components of Xi. We report the least squares residual of this system.
+    In particular, this function calculates ||b - A*Xi||_2^2, where
+    A \in R^{n x m} is the matrix whose i,j entry holds an approximation to the
+    integral
+            \int_{\Omega} w_i(X) D_j F_j(U(X)) dX.
+    That is, A_{i,j} holds the value of the integral of the jth library term
+    times the ith weight function. Likewise, b \in R^m is the vector whose
+    ith entry holds the value
+            \int_{\Omega} w_i(X) D F(U(X)) dX.
+    We approximate these integrals using a quadrature rule. We evaluate U at the
+    Partition_Coords (which should be the same array of coordinates we used to
+    initialize each weight function). We then use this to evaluate F_j(U) on the
+    Partition_Coords. We then use this array of values, the weight function, and
+    D_j to evaluate [A]_{i,j}.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    U : The neural network which approximates the system response function.
+
+    Xi : The 1D tensor of coefficients used to calculate the weak form loss (see
+    above). If there are n RHS Terms, then Xi should have n elements.
+
+    LHS_Term : The Left Hand Side library term. This is DF(U) in the PDE.
+
+    RHS_Terms : The Right Hand Side library terms in the PDE - These are
+    D_1 F_1(U), ... , D_n F_n(U) in the PDE.
+
+    Partition : The quadrature points used to approximate the integral.
+    This should be the same set of coordinates we used to initialize the weight
+    functions. The points in Partition should represent a partition of
+    Omega. This partition should be uniform in the sense that along each
+    axis, partition points are uniformly spaced.
+
+    V : The volume of any sub-rectangle in the partition of Omega.
+
+    Weight_Functions : A list containing the weight functions we want to use
+    to compute the Weak Form Loss.
+
+    ----------------------------------------------------------------------------
+    Returns:
+
+    A single element tensor whose lone element holds the weak form loss. """
 
 
     ############################################################################
@@ -75,20 +129,22 @@ def Weak_Form_Loss( U                   : Neural_Network,
 
 
     ############################################################################
-    # Evaluate powers of U on the Grid
+    # Evaluate powers of U on the partition
 
     # Now, evaluate U at the coords.
-    U_Grid_Coords   : torch.Tensor  = U(Grid_Coords).view(-1);
-    Num_Coords      : int           = U_Grid_Coords.numel();
+    U_Partition : torch.Tensor  = U(Partition).view(-1);
+    Num_Coords  : int           = U_Partition.numel();
 
-    # Next, compute powers of U up to Max_Pow on Max_Grid. We will need these
-    # values for when integrating.
-    U_Coords_Powers : torch.Tensor  = torch.empty([Num_Coords, Max_Pow + 1], dtype = torch.float32);
+    # Next, compute powers of U up to Max_Pow on the partition. We will need
+    # these values for when integrating. We store them in a list.
+    U_Partition_Powers = [];
 
-    U_Coords_Powers[:, 0] = 1;
+    U_Partition_Powers.append(torch.ones(Num_Coords, dtype = torch.float32));
+    U_Partition_Powers.append(U_Partition);
 
-    for i in range(1, Max_Pow + 1):
-        U_Coords_Powers[:, i] = torch.pow(U_Grid_Coords, i);
+    for i in range(2, Max_Pow + 1):
+        U_Partition_Powers.append(torch.pow(U_Partition, i));
+
 
 
     ############################################################################
@@ -108,10 +164,10 @@ def Weak_Form_Loss( U                   : Neural_Network,
     b : torch.Tensor    = torch.empty(m, dtype = torch.float32);
 
     for i in range(m):
-        b[i] = Integrate(   w       = Weight_Functions[i],
-                            D       = LHS_Term.Derivative,
-                            FU_Grid = U_Coords_Powers[:, LHS_Term.Trial_Function.Power],
-                            V       =  V);
+        b[i] = Integrate(   w               = Weight_Functions[i],
+                            D               = LHS_Term.Derivative,
+                            FU_Partition    = U_Partition_Powers[LHS_Term.Trial_Function.Power],
+                            V               = V);
 
     # Construct A \xi column by column
     A_Xi : torch.Tensor = torch.zeros(m, dtype = torch.float32);
@@ -119,18 +175,19 @@ def Weak_Form_Loss( U                   : Neural_Network,
     for j in range(n):
         D_j : Derivative        = RHS_Terms[j].Derivative;
         F_j : Trial_Function    = RHS_Terms[j].Trial_Function;
-        A_j : torch.Tensor  = torch.empty(m, dtype = torch.float32);
+        A_j : torch.Tensor      = torch.empty(m, dtype = torch.float32);
+
 
         for i in range(m):
-            A_j[i]  = Integrate(w       = Weight_Functions[i],
-                                D       = D_j,
-                                FU_Grid = U_Coords_Powers[:, F_j.Power],
-                                V       = V);
+            A_j[i]  = Integrate(w               = Weight_Functions[i],
+                                D               = D_j,
+                                FU_Partition    = U_Partition_Powers[F_j.Power],
+                                V               = V);
 
         A_Xi += torch.multiply(A_j, Xi[j]);
 
     # Compute loss! (this is ||A \xi - b ||_2^2).
-    return torch.sum((A_Xi - b)**2);
+    return torch.sum((b - A_Xi)**2);
 
 
 

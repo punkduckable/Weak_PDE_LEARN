@@ -16,7 +16,7 @@ def Training(
         Targets                             : torch.Tensor,
         LHS_Term                            : Library_Term,
         RHS_Terms                           : List[Library_Term],
-        Grid_Coords                         : torch.Tensor,
+        Partition                           : torch.Tensor,
         V                                   : float,
         Weight_Functions                    : List[Weight_Function],
         p                                   : float,
@@ -55,12 +55,14 @@ def Training(
     RHS_Terms: A list of the Library terms (trial function + derivative)
     that appear in the right hand side of the PDE.
 
-    Grid_Coords: A 2D array whose ith row holds the coordinates of the ith
-    girdpoint on the grid used to compute the integrals in the weak form loss.
+    Partition: A 2D array whose ith row holds the coordinates of the ith
+    point in the partition of the problem domain. We use these points as
+    quadrature points when approximating the integrals in the weak form loss.
+    We also assume each weight function was initialized with Coords = Partition.
 
-    V: The volume of any sub-rectangle in the grid of quadrature points. We
-    assume that along any dimension, the gird lines are uniformly spaced,
-    meaning that every sub-rectangle engendered by the grid has the same
+    V: The volume of any sub-rectangle induced by the partition. We
+    assume that along any dimension, the partition points are uniformly spaced,
+    meaning that every sub-rectangle induced by the partition has the same
     volume. V is that volume.
 
     Weight_Functions: A list of the weight functions in the weak form loss.
@@ -101,7 +103,7 @@ def Training(
                                 Xi                  = Xi,
                                 LHS_Term            = LHS_Term,
                                 RHS_Terms           = RHS_Terms,
-                                Grid_Coords         = Grid_Coords,
+                                Partition           = Partition,
                                 V                   = V,
                                 Weight_Functions    = Weight_Functions)
 
@@ -136,7 +138,7 @@ def Testing(
         Targets                             : torch.Tensor,
         LHS_Term                            : Library_Term,
         RHS_Terms                           : List[Library_Term],
-        Grid_Coords                         : torch.Tensor,
+        Partition                           : torch.Tensor,
         V                                   : float,
         Weight_Functions                    : List[Weight_Function],
         p                                   : float,
@@ -179,12 +181,14 @@ def Testing(
     RHS_Terms: A list of the Library terms (trial function + derivative)
     that appear in the right hand side of the PDE.
 
-    Grid_Coords: A 2D array whose ith row holds the coordinates of the ith
-    girdpoint on the grid used to compute the integrals in the weak form loss.
+    Partition: A 2D array whose ith row holds the coordinates of the ith
+    point in the partition of the problem domain. We use these points as
+    quadrature points when approximating the integrals in the weak form loss.
+    We also assume each weight function was initialized with Coords = Partition.
 
-    V: The volume of any sub-rectangle in the grid of quadrature points. We
-    assume that along any dimension, the gird lines are uniformly spaced,
-    meaning that every sub-rectangle engendered by the grid has the same
+    V: The volume of any sub-rectangle induced by the partition. We
+    assume that along any dimension, the partition points are uniformly spaced,
+    meaning that every sub-rectangle induced by the partition has the same
     volume. V is that volume.
 
     Weight_Functions: A list of the weight functions in the weak form loss.
@@ -213,7 +217,7 @@ def Testing(
                                         Xi                  = Xi,
                                         LHS_Term            = LHS_Term,
                                         RHS_Terms           = RHS_Terms,
-                                        Grid_Coords         = Grid_Coords,
+                                        Partition           = Partition,
                                         V                   = V,
                                         Weight_Functions    = Weight_Functions).item()
 

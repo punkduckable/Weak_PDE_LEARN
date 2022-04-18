@@ -2,14 +2,14 @@
 # Save, Load Settings.
 
 # Load settings.
-Load U From Save [bool]:                         False
-Load Xi From Save [bool]:                        False
+Load U From Save [bool]:                         True
+Load Xi From Save [bool]:                        True
 Load Optimizer From Save [bool]:                 False
-    Load File Name [str]:                        Test
+    Load File Name [str]:                        Burgers_Sine_Rational_Adam
 
 # Save settings
 Save State [bool]:                               True
-    Save File Name [str]:                        Test
+    Save File Name [str]:                        Burgers_Sine_Rational_LBFGS
 
 
 
@@ -19,8 +19,9 @@ Save State [bool]:                               True
 # Order of the time derivative on the PDE's left-hand side
 Time Derivative Order [int]:                     1
 
-# Where are the library functions listed? (omit .txt extension)
-Library Function / Derivative file [str]:        Library.txt
+# Where are the library terms listed? Omit the .txt extension. This file should
+# be in the main directory.
+Library File [str]:                              Library
 
 
 
@@ -30,7 +31,7 @@ Library Function / Derivative file [str]:        Library.txt
 # U network.
 Number of Hidden Layers [int]:                   5
 Hidden Units per Hidden Layer [int]:             50
-Activation Function [Tanh, Rational, Sin]:       Tanh
+Activation Function [Tanh, Rational, Sin]:       Rational
 
 # Device settings.
 Train on CPU or GPU [GPU, CPU]:                  cpu
@@ -40,8 +41,11 @@ Train on CPU or GPU [GPU, CPU]:                  cpu
 ################################################################################
 # Loss Settings.
 
+Number of Weight Functions [int]:                200
+Axis Partition Size [int]:                       200
+
 p [float]:                                       .1
-Lambda [float]:                                  .0002
+Lambda [float]:                                  .0001
 
 
 ################################################################################
@@ -54,13 +58,13 @@ Threshold [float]:                               .001
 ################################################################################
 # Optimizer Settings.
 
-Optimizer [Adam, LBFGS]:                         Adam
-Learning Rate [float]:                           .001
-Number of Epochs [int]:                          500
+Optimizer [Adam, LBFGS]:                         LBFGS
+Learning Rate [float]:                           .1
+Number of Epochs [int]:                          100
 
 
 
 ################################################################################
 # Data Settings.
 
-DataSet [str]:                                  Burgers_Sine_N40_P1000
+DataSet [str]:                                  Burgers_Sine_N0_P10000

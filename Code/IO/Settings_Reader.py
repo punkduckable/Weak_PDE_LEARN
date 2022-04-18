@@ -182,6 +182,17 @@ def Settings_Reader() -> Settings_Container:
     ############################################################################
     # Loss settings.
 
+    # Read the number of weight functions
+    Settings.Num_Weight_Functions = int(Read_Setting(File, "Number of Weight Functions [int]:"))
+
+    # Read the Axis Partition Size. Suppose the problem domain is [a_1, b_1] x
+    # ... x [a_n, b_n]. If the Axis Partition size is N, then we partition each
+    # [a_i, b_i] using a uniform partition with N points. We then use these axis
+    # partitions to define a partition of the entire. This is the set of
+    # points of the form (p_1, ... , p_n) where each p_i is in an element of
+    # the partition for the ith axis.
+    Settings.Axis_Partition_Size = int(Read_Setting(File, "Axis Partition Size [int]:"))
+
     # Read p values (used in the Lp loss function).
     Settings.p      = float(Read_Setting(File, "p [float]:"));
 
