@@ -2,12 +2,16 @@
 import os
 import sys
 
-# Get path to parent directory
-parent_dir  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)));
+# Get path to main directory
+Main_Path  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)));
 
-# Add the Code directory to the python path.
-Code_path   = os.path.join(parent_dir, "Code");
-sys.path.append(Code_path);
+# Get the path to the Code, Classes directories.
+Code_Path       = os.path.join(Main_Path, "Code");
+Classes_Path    = os.path.join(Code_Path, "Classes");
+
+# Add these directories to the python search path.
+sys.path.append(Code_Path);
+sys.path.append(Classes_Path);
 
 # external libraries and stuff.
 import numpy;
@@ -24,6 +28,7 @@ from Weight_Function        import Weight_Function;
 def Plot_Bump(  w       : Weight_Function,
                 Dim_0   : int,
                 Dim_1   : int,
+                m       : int,
                 Coords  : torch.Tensor) -> None:
     """ This function plots a slice of the Weight Function, w. If w is a
     function of two variables (t and x), then this simply plots w. Otherwise,
@@ -39,14 +44,14 @@ def Plot_Bump(  w       : Weight_Function,
     w_Coords : numpy.ndarray = w(Coords).detach().numpy();
 
     # Set up plotting coordinates.
-    grid_Dim0_Coords : numpy.ndarray = Coords[:, Dim_0].reshape(100, 100);
-    grid_Dim1_Coords : numpy.ndarray = Coords[:, Dim_1].reshape(100, 100);
-    grid_w_Coords    : numpy.ndarray = w_Coords.reshape(100, 100);
+    grid_Dim0_Coords : numpy.ndarray = Coords[:, Dim_0].reshape(m, m);
+    grid_Dim1_Coords : numpy.ndarray = Coords[:, Dim_1].reshape(m, m);
+    grid_w_Coords    : numpy.ndarray = w_Coords.reshape(m, m);
 
     # Get min and max of w_Coords. We will use this to set up colors plot colors.
-    epsilon : float = .0001;
-    w_Coords_min : float = numpy.min(grid_w_Coords) - epsilon;
-    w_Coords_max : float = numpy.max(grid_w_Coords) + epsilon;
+    epsilon         : float = .0001;
+    w_Coords_min    : float = numpy.min(grid_w_Coords) - epsilon;
+    w_Coords_max    : float = numpy.max(grid_w_Coords) + epsilon;
 
     # Plot!
     pyplot.contourf(    grid_Dim0_Coords,
@@ -65,6 +70,7 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
                             D           : Derivative,
                             Dim_0       : int,
                             Dim_1       : int,
+                            m           : int,
                             Coords      : torch.Tensor) -> None:
     # First, get the center and radius of w.
     Center : torch.Tensor   = w.X_0;
@@ -75,9 +81,9 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
     D_w : numpy.ndarray = w.Get_Derivative(D = D).detach().numpy();
 
     # Set up plotting coordinates.
-    grid_Dim0_Coords : numpy.ndarray = Coords[:, Dim_0].reshape(100, 100);
-    grid_Dim1_Coords : numpy.ndarray = Coords[:, Dim_1].reshape(100, 100);
-    grid_D_w         : numpy.ndarray = D_w.reshape(100, 100);
+    grid_Dim0_Coords : numpy.ndarray = Coords[:, Dim_0].reshape(m, m);
+    grid_Dim1_Coords : numpy.ndarray = Coords[:, Dim_1].reshape(m, m);
+    grid_D_w         : numpy.ndarray = D_w.reshape(m, m);
 
     # Get min and max of D_w. We will use this to set up colors plot colors.
     epsilon : float = .0001;
@@ -100,8 +106,8 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
 
 def main():
     # Set center, radius of weight function.
-    Center : torch.Tensor   = torch.tensor([0, 0, 0, 0], dtype = torch.float32);
-    Radius : float          = 3;
+    Center : torch.Tensor   = torch.tensor([42.9536,  0.4543], dtype = torch.float32);
+    Radius : float          = 5.0;
 
 
     ############################################################################
@@ -109,38 +115,39 @@ def main():
 
     # Since we can only plot a function of two variables, the coords will lie
     # along a 2D plane... first, select which two dimensions.
-    Dim_0 : int = 2;
-    Dim_1 : int = 3;
+    Dim_0 : int = 0
+    Dim_1 : int = 1;
 
     # The coordinates will lie in a Box [a, b] x [c, d] centered at Center, with
     # side length 3r, in the Dim_0 x Dim_1 plane.
-    a : float = Center[Dim_0] - 1.5*Radius;
-    b : float = Center[Dim_0] + 1.5*Radius;
+    a : float = 0;
+    b : float = 50;
 
-    c : float = Center[Dim_1] - 1.5*Radius;
-    d : float = Center[Dim_1] + 1.5*Radius;
+    c : float = -10;
+    d : float = 10;
 
-    # Place a grid on this box with 100 gridlines along each axis.
-    Dim0_Pts : numpy.ndarray = numpy.linspace(start = a, stop = b, num = 100);
-    Dim1_Pts : numpy.ndarray = numpy.linspace(start = c, stop = d, num = 100);
+    # Place a grid on this box with m gridlines along each axis.
+    m : int = 100;
+    Dim0_Pts : numpy.ndarray = numpy.linspace(start = a, stop = b, num = m);
+    Dim1_Pts : numpy.ndarray = numpy.linspace(start = c, stop = d, num = m);
 
     # Generate Coords (non Dim_0/Dim_1 components are the corresponding
     # components of Center)
     n : int = torch.numel(Center);
-    Coords  = torch.empty(size = (100*100, n), dtype = torch.float32);
+    Coords  = torch.empty(size = (m*m, n), dtype = torch.float32);
 
-    for i in range(100):
-        for j in range(100):
-            Coords[100*i + j, :]     = Center;
+    for i in range(m):
+        for j in range(m):
+            Coords[m*i + j, :]     = Center;
 
-            Coords[100*i + j, Dim_0] = Dim0_Pts[i];
-            Coords[100*i + j, Dim_1] = Dim1_Pts[j];
+            Coords[m*i + j, Dim_0] = Dim0_Pts[i];
+            Coords[m*i + j, Dim_1] = Dim1_Pts[j];
 
 
     ############################################################################
     # Initialize Derivative operator.
 
-    D = Derivative(Encoding = numpy.array([0, 0, 2, 1], dtype = numpy.int32));
+    D = Derivative(Encoding = numpy.array([0, 4], dtype = numpy.int32));
 
 
     ############################################################################
@@ -152,12 +159,11 @@ def main():
                                             Coords  = Coords);
 
 
-
     ############################################################################
     # Plot!!!
 
-    Plot_Bump(              w,      Dim_0 = Dim_0, Dim_1 = Dim_1, Coords = Coords);
-    Plot_Bump_Derivative(   w,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, Coords = Coords);
+    Plot_Bump(              w,      Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords);
+    Plot_Bump_Derivative(   w,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords);
 
 
 

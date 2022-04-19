@@ -1,13 +1,17 @@
-# Nonsense to add Code diectory to the Python search path.
+# Nonsense to add Code, Classes directories to the Python search path.
 import os
 import sys
 
 # Get path to parent directory
-parent_dir  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)));
+Main_Path       = os.path.dirname(os.path.dirname(os.path.abspath(__file__)));
 
-# Add the Code directory to the python path.
-Code_path   = os.path.join(parent_dir, "Code");
+# Get the path to the Code, Classes directories.
+Code_path       = os.path.join(Main_Path, "Code");
+Classes_Path    = os.path.join(Code_path, "Classes");
+
+# Add them to the Python search path.
 sys.path.append(Code_path);
+sys.path.append(Classes_Path);
 
 # Code files.
 from Network        import Neural_Network;
@@ -90,14 +94,14 @@ if __name__ == "__main__":
     # Set the settings.
     Num_Hidden_Layers       : int           = 5;
     Units_Per_Layer         : int           = 50;
-    Activation_Function     : str           = "Tanh";
+    Activation_Function     : str           = "Rational";
     Device                  : torch.device  = torch.device('cpu');
-    Load_File_Name          : str           = "Test_LBFGS";
+    Load_File_Name          : str           = "KS_Sine_Rational_LBFGS";
     Gridlines_Per_Axis      : int           = 200;
     t_low                   : float         = 0.0;
-    t_high                  : float         = 10.0;
-    x_low                   : float         = -8.0;
-    x_high                  : float         = 8.0;
+    t_high                  : float         = 50.0;
+    x_low                   : float         = -10.0;
+    x_high                  : float         = 10.0;
 
     # Plot!
     Plot_U_2D(  Num_Hidden_Layers   = Num_Hidden_Layers,

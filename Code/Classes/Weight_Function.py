@@ -120,7 +120,7 @@ class Weight_Function(torch.nn.Module):
         self.X_0            : torch.Tensor  = X_0;
         self.Input_Dim      : int           = X_0.numel();
         self.r              : float         = r;
-        self.Powers         : torch.Tensor  = Powers;
+        self.Powers         : torch.Tensor  = Powers.to(dtype = torch.int32);
 
         # Get Num_Coords.
         self.Num_Coords     : int           = Coords.shape[0];
@@ -137,7 +137,7 @@ class Weight_Function(torch.nn.Module):
         Max_XmX0                : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
 
         # Now, determine which coordinates are in B_r(X_0).
-        self.Supported_Indices    : torch.Tensor  = torch.less(Max_XmX0, r);
+        self.Supported_Indices    : torch.Tensor  = torch.less(Max_XmX0, self.r);
 
         # Record the coordinates that are.
         self.Supported_Coords     : torch.Tensor  = Coords[self.Supported_Indices, :];
@@ -160,37 +160,36 @@ class Weight_Function(torch.nn.Module):
         A B element tensor whose ith entry is w evaluated at the ith coordinate
         (ith row of X). """
 
-        # w(X) = { prod_{i = 1}^{n} (-(X_i - X0_i - r)(X_i - X0_i + r)/r^2)^p_i if ||X - X_0||_{max} < r
+        # w(X) = { prod_{i = 1}^{n} ((X0_i + r - X_i)(X_i - X0_i + r)/r^2)^p_i if ||X - X_0||_{max} < r
         #        { 0                                                            otherwise
 
         # First, calculate || X - X_0 ||_{infinity}.
-        XmX0                    : torch.Tensor  = torch.subtract(X, self.X_0);
-        Max_XmX0                : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
+        XmX0                : torch.Tensor  = torch.subtract(X, self.X_0);
+        Max_XmX0            : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
 
         # Determine which coordinates are in B_r(X_0).
-        Supported_Indices       : torch.Tensor  = torch.less(Max_XmX0, self.r);
+        Supported_Indices   : torch.Tensor  = torch.less(Max_XmX0, self.r);
 
         # Extract the coordinates in B_r(X_0).
-        X_Supported : torch.Tensor      = X[Supported_Indices, :];
+        X_Supported         : torch.Tensor  = X[Supported_Indices, :];
 
-        # Calculate X - (X0 + r) and X - (X0 - r).
-        XmX0mr : torch.Tensor           = torch.subtract(X_Supported, torch.add(self.X_0, self.r));
-        XmX0pr : torch.Tensor           = torch.subtract(X_Supported, torch.subtract(self.X_0, self.r));
+        # Calculate (X - (X0 + r))/r and (X - (X0 - r))/r.
+        X0prmX              : torch.Tensor  = torch.subtract(torch.add(self.X_0, self.r), X_Supported);
+        XmX0pr              : torch.Tensor  = torch.subtract(X_Supported, torch.subtract(self.X_0, self.r));
 
         # Now compute their element wise product.
-        XmX0mr_XmX0pr       : torch.Tensor  = torch.multiply(XmX0mr, XmX0pr);
+        X0prmX_XmX0pr_r2    : torch.Tensor  = torch.divide(torch.multiply(X0prmX, XmX0pr), (self.r)*(self.r));
 
-        # Normalize by r and raise to the power Powers[i].
-        XmX0mr_XmX0pr_r2    : torch.Tensor  = torch.divide(XmX0mr_XmX0pr, -1.*(self.r)*(self.r));
-        XmX0mr_XmX0pr_r2_pi : torch.Tensor  = torch.pow(XmX0mr_XmX0pr_r2, self.Powers);
+        # Raise to the power Powers[i].
+        X0prmX_XmX0pr_r2_pi : torch.Tensor  = torch.pow(X0prmX_XmX0pr_r2, self.Powers);
 
-        # Compute the product of the columns. This yields a 1D tensor whose ith
-        # entry holds w at the ith supported coordinate.
-        w_X_Supported       : torch.Tensor  = torch.prod(XmX0mr_XmX0pr_r2_pi, dim = 1);
+        # Compute the product of the columns of the above tensor. This yields a
+        # tensor whose ith entry is w(X_i).
+        w_X_Supported       : torch.Tensor  = torch.prod(X0prmX_XmX0pr_r2_pi, dim = 1);
 
         # Calculate w at the rest of the coordinates.
-        w_X : torch.Tensor              = torch.zeros(X.shape[0], dtype = torch.float32);
-        w_X[Supported_Indices]          = w_X_Supported;
+        w_X                 : torch.Tensor  = torch.zeros(X.shape[0], dtype = X.dtype);
+        w_X[Supported_Indices]              = w_X_Supported;
 
         # Return!
         return w_X;
@@ -273,14 +272,12 @@ class Weight_Function(torch.nn.Module):
 
         # First, check if we've already evaluated D(w).
         if(tuple(D.Encoding) in self.Derivatives):
-            #print(D, end = '');
-            #print("(w) already in Derivatives dictionary.");
             return;
 
         # If not, then let's calculate it.
         Dw : torch.Tensor = Evaluate_Derivative(    w       = self,
                                                     D       = D,
-                                                    Coords  = self.Supported_Coords);
+                                                    Coords   = self.Supported_Coords);
         self.Derivatives[tuple(D.Encoding)] = Dw.detach();
 
         # All done!
@@ -314,7 +311,7 @@ class Weight_Function(torch.nn.Module):
         Dw[self.Supported_Indices]  = Dw_Supported_Coords;
 
         # All done!
-        return Dw
+        return Dw;
 
 
 
@@ -351,7 +348,12 @@ def Evaluate_Derivative(
     B elements. The ith component of the returned Tensor holds D(w) evaluated
     at the ith coordinate (ith row of Coords). """
 
-    # We need to evaluate derivatives, so set Requires Grad to true.
+    # First, we need to convert Coords to double precision. We need this to
+    # prevent nan's from appearing when computing high order derivatives.
+    # we will convert back to single precision when we're done.
+    Coords : torch.Tensor = Coords.to(dtype = torch.float64);
+
+    # Next, we need to evaluate derivatives, so set Requires Grad to true.
     Coords.requires_grad_(True);
 
     # Make sure we can actually compute the derivatives. For this, we need
@@ -426,7 +428,7 @@ def Evaluate_Derivative(
     # First, check if there are any y derivatives (if Derivative.Encoding has a
     # 3rd element). If not, then we're done.
     if(D.Encoding.size < 3):
-        return Dx_Dt_w;
+        return Dx_Dt_w.to(dtype = torch.float32);
 
     # Assuming we need y derivatives, initialize Dy_Dx_Dt_w. If there are no y
     # derivatives, then Dy_Dx_Dt_w = Dx_Dt_w.
@@ -457,7 +459,7 @@ def Evaluate_Derivative(
     # First, check if there are any z derivatives (if Derivative.Encoding has a
     # 4th element). If not, then we're done.
     if(D.Encoding.size < 4):
-        return Dy_Dx_Dt_w;
+        return Dy_Dx_Dt_w.to(dtype = torch.float32);
 
     # Assuming we need z derivatives, initialize Dz_Dy_Dx_Dt_w. If there are no
     # z derivatives, then Dz_Dy_Dx_Dt_w = Dy_Dx_Dt_w.
@@ -480,4 +482,4 @@ def Evaluate_Derivative(
             # D_y^k Dy_Dx_Dt_w)
             Dz_Dy_Dx_Dt_w = Grad_Dz_Dy_Dx_Dt_w[:, 3].view(-1);
 
-    return Dz_Dy_Dx_Dt_w;
+    return Dz_Dy_Dx_Dt_w.to(dtype = torch.float32);
