@@ -149,3 +149,65 @@ def Read_Line_After(
             continue;
         else:
             return Line[Index:];
+
+
+
+def Read_Bool_Setting(File, Setting_Name : str) -> bool:
+    """ Reads a boolean setting from File.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    File: The file we want to read the setting from.
+
+    Setting_Name: The name of the setting we're reading. We need this in case
+    of an error, so that we can print the appropiate error message.
+
+    ----------------------------------------------------------------------------
+    Return:
+
+    The value of the boolean setting. """
+
+    # Read the setting. This will yield a string.
+    Buffer = Read_Line_After(File, Setting_Name).strip();
+
+    # Check if the setting is present. If not, the Buffer will be empty.
+    if  (len(Buffer) == 0):
+        raise Read_Error("Missing Setting Value: You need to specify the \"%s\" setting" % Setting_Name);
+
+    # Attempt to parse the result. Throw an error if we can't.
+    if  (Buffer[0] == 'T' or Buffer[0] == 't'):
+        return True;
+    elif(Buffer[0] == 'F' or Buffer[0] == 'f'):
+        return False;
+    else:
+        raise Read_Error("Invalid Setting Value: \"%s\" should be \"True\" or \"False\". Got " % Setting_Name + Buffer);
+
+
+
+def Read_Setting(File, Setting_Name : str) -> str:
+    """ Reads a non-boolean setting from File.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    File: The file we want to read the setting from.
+
+    Setting_Name: The name of the setting we're reading. We need this in case
+    of an error, so that we can print the appropiate error message.
+
+    ----------------------------------------------------------------------------
+    Return:
+
+    The value of the non-boolean setting as a string (you may need to type cast
+    the returned value) """
+
+    # Read the setting. This will yield a string.
+    Buffer = Read_Line_After(File, Setting_Name).strip();
+
+    # Check if the setting is present. If not, the Buffer will be empty.
+    if  (len(Buffer) == 0):
+        raise Read_Error("Missing Setting Value: You need to specify the \"%s\" setting" % Setting_Name);
+
+    # Return!
+    return Buffer;
