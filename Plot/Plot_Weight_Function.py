@@ -106,8 +106,8 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
 
 def main():
     # Set center, radius of weight function.
-    Center : torch.Tensor   = torch.tensor([42.9536,  0.4543], dtype = torch.float32);
-    Radius : float          = 5.0;
+    Center : torch.Tensor   = torch.tensor([0, 0], dtype = torch.float32);
+    Radius : float          = 1;
 
 
     ############################################################################
@@ -120,14 +120,14 @@ def main():
 
     # The coordinates will lie in a Box [a, b] x [c, d] centered at Center, with
     # side length 3r, in the Dim_0 x Dim_1 plane.
-    a : float = 0;
-    b : float = 50;
+    a : float = -3.0*Radius;
+    b : float = 3.0*Radius;
 
-    c : float = -10;
-    d : float = 10;
+    c : float = -3.0*Radius;
+    d : float = 3.0*Radius;
 
     # Place a grid on this box with m gridlines along each axis.
-    m : int = 100;
+    m : int = 300;
     Dim0_Pts : numpy.ndarray = numpy.linspace(start = a, stop = b, num = m);
     Dim1_Pts : numpy.ndarray = numpy.linspace(start = c, stop = d, num = m);
 

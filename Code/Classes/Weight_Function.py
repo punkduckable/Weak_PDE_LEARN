@@ -1,5 +1,6 @@
 import torch;
 import numpy;
+import math;
 
 from Derivative             import Derivative;
 
@@ -144,7 +145,9 @@ class Weight_Function(torch.nn.Module):
 
 
 
-    def forward(self, X : torch.Tensor) -> torch.Tensor:
+    # Polynomial. If using, weight functions need a "Powers" attribute and use
+    # inf norm to determine supported points.
+    #def forward(self, X : torch.Tensor) -> torch.Tensor:
         """ This method evaluates the weight function at each coordinate of X.
 
         ------------------------------------------------------------------------
@@ -159,7 +162,7 @@ class Weight_Function(torch.nn.Module):
 
         A B element tensor whose ith entry is w evaluated at the ith coordinate
         (ith row of X). """
-
+        """
         # w(X) = { prod_{i = 1}^{n} ((X0_i + r - X_i)(X_i - X0_i + r)/r^2)^p_i if ||X - X_0||_{max} < r
         #        { 0                                                            otherwise
 
@@ -192,13 +195,29 @@ class Weight_Function(torch.nn.Module):
         w_X[Supported_Indices]              = w_X_Supported;
 
         # Return!
-        return w_X;
+        return w_X;"""
 
-    """
-    # These are forward methods for alternative forms of the weight function.
-    def forward(self, X : torch.Tensor) -> torch.Tensor:
-        # w(X) = { exp( 1/((||X - X_0||/r)^2 - 1) )     if || X - X_0|| < r.
-        #        { 0                                    otherwise
+
+
+    # Bump in R^n. If using, make init use 2 norm to determine supported points.
+    #def forward(self, X : torch.Tensor) -> torch.Tensor:
+        """ This method evaluates the weight function at each coordinate of X.
+
+        ------------------------------------------------------------------------
+        Arguments:
+
+        X : A 2D tensor, each row of which holds a coordinate at which we want
+        to evaluate the weight function. If this weight function object is
+        defined on R^n, then X should be a B by n tensor.
+
+        ------------------------------------------------------------------------
+        Returns:
+
+        A B element tensor whose ith entry is w evaluated at the ith coordinate
+        (ith row of X). """
+        """
+        # w(X) = { exp( 7.5^3/(||X - X_0||^2 - r^2) + 7.5 )   if || X - X_0|| < r.
+        #        { 0                                        otherwise
 
         # First, calculate || X - X_0 ||_2^2.
         XmX0                : torch.Tensor  = torch.subtract(X, self.X_0);
@@ -209,20 +228,39 @@ class Weight_Function(torch.nn.Module):
 
         # Evaluate w at the points in B_r(X_0).
         Norm_XmX0_In_BrX0   : torch.Tensor  = Norm_XmX0[Indices_In_BrX0];
-        Exp_Denominator     : torch.Tensor  = torch.subtract(torch.divide(Norm_XmX0_In_BrX0, (self.r*self.r)), 1.);
-        w_X_In_BrX0         : torch.Tensor  = torch.exp(torch.divide(torch.ones_like(Exp_Denominator), Exp_Denominator));
+        Denominators        : torch.Tensor  = torch.subtract(Norm_XmX0_In_BrX0, (self.r)**2);
+        Exponents           : torch.Tensor  = torch.add(torch.divide(torch.full_like(Denominators, 7.5*(self.r)**2), Denominators), 7.5);
+        w_X_In_BrX0         : torch.Tensor  = torch.exp(Exponents);
 
         # Put everything together.
         w_X                 : torch.Tensor  = torch.zeros_like(Norm_XmX0);
         w_X[Indices_In_BrX0]                = w_X_In_BrX0;
 
         # Return!
-        return w_X;
+        return w_X;"""
 
 
+
+    # Product of 1D bumps. If using, make init use inf norm to determine
+    # supported points.
     def forward(self, X : torch.Tensor) -> torch.Tensor:
-        # w(X) =    { prod_{i = 1}^{n} exp(1/((|X_i - X_0_i|/r)^2 - 1)  if ||X - X_0||_{max} < r
-        #           { 0                                                 otherwise
+        """ This method evaluates the weight function at each coordinate of X.
+
+        ------------------------------------------------------------------------
+        Arguments:
+
+        X : A 2D tensor, each row of which holds a coordinate at which we want
+        to evaluate the weight function. If this weight function object is
+        defined on R^n, then X should be a B by n tensor.
+
+        ------------------------------------------------------------------------
+        Returns:
+
+        A B element tensor whose ith entry is w evaluated at the ith coordinate
+        (ith row of X). """
+
+        # w(X) =    { prod_{i = 1}^{n} exp(5*r^2/((X_i - X_0_i)^2 - r^2) + 5)   if ||X - X_0||_{max} < r
+        #           { 0                                                         otherwise
 
         # First, calculate || X - X_0 ||_{infinity}.
         XmX0                : torch.Tensor  = torch.subtract(X, self.X_0);
@@ -231,21 +269,22 @@ class Weight_Function(torch.nn.Module):
         # Determine which coordinates are in B_r(X_0).
         Supported_Indices   : torch.Tensor  = torch.less(Max_XmX0, self.r);
 
-        # Evaluate (|X_i - X_0_i|/r)^2 - 1 for each component of each
+        # Evaluate (X_i - X_0_i)^2 - r^2 for each component of each
         # supported coordinate.
-        Abs_XmX0            : torch.Tensor  = torch.abs(XmX0[Supported_Indices, :]);
-        Denominators        : torch.Tensor  = torch.subtract(torch.pow(torch.divide(Abs_XmX0, self.r), 2.), 1.);
+        XmX0                : torch.Tensor  = XmX0[Supported_Indices, :];
+        Denominators        : torch.Tensor  = torch.subtract(torch.pow(XmX0, 2.), (self.r)**2);
 
         # Compute w at the supported coordinates.
-        Exp_Supported       : torch.Tensor  = torch.exp(torch.divide(torch.ones_like(Denominators), Denominators));
-        w_X_Supported       : torch.tensor  = torch.prod(Exp_Supported, dim = 1);
+        r2_XmX02_r2_5       : torch.Tensor = torch.add(torch.divide(torch.full_like(Denominators, 7.5*(self.r)**2), Denominators), 7.5);
+        Exponent            : torch.Tensor = torch.sum(r2_XmX02_r2_5, dim = 1);
+        w_X_Supported       : torch.Tensor = torch.exp(Exponent);
 
         # Calculate w at the rest of the coordinates.
-        w_X                 : torch.Tensor  = torch.zeros(X.shape[0], dtype = torch.float32);
+        w_X                 : torch.Tensor  = torch.zeros(X.shape[0], dtype = X.dtype);
         w_X[Supported_Indices]              = w_X_Supported;
 
         # Return!
-        return w_X; """
+        return w_X;
 
 
 

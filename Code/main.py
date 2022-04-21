@@ -106,7 +106,7 @@ def main():
             Min_Side_Length = Bounds[i, 1] - Bounds[i, 0];
 
     # Set up radius.
-    Radius  : float = Min_Side_Length/4.;
+    Radius  : float = Min_Side_Length*.4;
 
     # Set up weight function centers.
     # If the problem domain is [a_1, b_1] x ... x [a_n, b_n], then we place the
