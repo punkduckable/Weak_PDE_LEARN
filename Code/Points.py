@@ -8,9 +8,9 @@ def Generate_Points(
         Bounds     : numpy.array,
         Num_Points : int,
         Device     : torch.device = torch.device('cpu')) -> torch.Tensor:
-    """ This function generates a two-dimensional tensor, each row of which
-    holds a randomly generated coordinate that lies in the rectangle defined by
-    Bounds.
+    """ 
+    This function generates a two-dimensional tensor, each row of which holds a 
+    randomly generated coordinate that lies in the rectangle defined by Bounds.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -29,7 +29,8 @@ def Generate_Points(
     coordinate in the rectangle specified by Bounds. Suppose that
             Bounds = [[a_1, b_1], ... , [a_n, b_n]]
     Then the ith row of the returned tensor contains a coordinate that lies
-    within [a_1, b_1]x...x[a_n, b_n]. """
+    within [a_1, b_1]x...x[a_n, b_n]. 
+    """
 
 
     # First, determine the number of dimensions. This is just the number of rows
@@ -61,8 +62,9 @@ def Generate_Points(
 
 def Setup_Partition(Axis_Partition_Size : int,
                     Bounds              : numpy.ndarray) -> torch.Tensor:
-    """ This function sets up a uniform partition with Axis_Partition_Size
-    points along each axis. Suppose Bounds = [[a_1, b_1], ... ,[a_n, b_n]]. We
+    """ 
+    This function sets up a uniform partition with Axis_Partition_Size points 
+    along each axis. Suppose Bounds = [[a_1, b_1], ... ,[a_n, b_n]]. We
     partition [a_i, b_i] using Axis_Partition_Size points such that successive
     points in the partition are equally spaced ( with a spacing of
     (b_i - a_i)/(Axis_Partition_Size - 1)). We repeat this for each dimension,
@@ -78,7 +80,7 @@ def Setup_Partition(Axis_Partition_Size : int,
     is the size of the partition of any sub-rectangle, [a_i, b_i].
 
     Bounds : A 2D array whose ith row is [a_i, b_i]. This function generates a
-    unifom partition on the rectangle [a_1, b_1] x ... x [a_n, b_n]. Bounds
+    uniform partition on the rectangle [a_1, b_1] x ... x [a_n, b_n]. Bounds
     defines the rectangle.
 
     ----------------------------------------------------------------------------
@@ -87,7 +89,7 @@ def Setup_Partition(Axis_Partition_Size : int,
     A 2D array whose ith row holds the coordinates of the ith partition point.
     In particular, this array will have size (Axis_Partition_Size^n) x n. """
 
-    # Alies.
+    # Aliases.
     Nd : int = Bounds.shape[0];
     Ng : int = Axis_Partition_Size;
 

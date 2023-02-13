@@ -1,4 +1,4 @@
-# Nonsense to add Classes diectory to the Python search path.
+# Nonsense to add Classes directory to the Python search path.
 import os
 import sys
 
@@ -15,7 +15,7 @@ import math;
 
 from typing import Tuple, List;
 
-from Network            import Neural_Network;
+from Network            import Network, Rational;
 from Integrate          import Integrate;
 from Derivative         import Derivative;
 from Library_Term       import Library_Term;
@@ -24,10 +24,11 @@ from Weight_Function    import Weight_Function;
 
 
 def Data_Loss(
-        U           : Neural_Network,
+        U           : Network,
         Inputs      : torch.Tensor,
         Targets     : torch.Tensor) -> torch.Tensor:
-    """ This function evaluates the data loss, which is the mean square
+    """ 
+    This function evaluates the data loss, which is the mean square
     error between U at the Inputs, and the Targets. To do this, we
     first evaluate U at the data points. At each point (t, x), we then
     evaluate |U(t, x) - U'_{t, x}|^2, where U'_{t,x} is the data point
@@ -51,12 +52,13 @@ def Data_Loss(
     ----------------------------------------------------------------------------
     Returns:
 
-    A scalar tensor whose sole entry holds the mean square data loss. """
+    A scalar tensor whose sole entry holds the mean square data loss. 
+    """
 
     # Evaluate U at the data points.
     U_Predict = U(Inputs).view(-1);
 
-    # Evaluate the pointwise square difference of U_Predict and Targets.
+    # Evaluate the point-wise square difference of U_Predict and Targets.
     Square_Error = ( U_Predict - Targets ) ** 2;
 
     # Return the mean square error.
@@ -64,16 +66,17 @@ def Data_Loss(
 
 
 
-def Weak_Form_Loss( U                   : Neural_Network,
+def Weak_Form_Loss( U                   : Network,
                     Xi                  : torch.Tensor,
                     LHS_Term            : Library_Term,
                     RHS_Terms           : List[Library_Term],
                     Partition           : torch.Tensor,
                     V                   : float,
                     Weight_Functions    : List[Weight_Function]) -> torch.Tensor:
-    """ We assume the underlying PDE is
+    """ 
+    We assume the underlying PDE is
         DF(U) = c_1 D_1 F_1(U) + ... + c_n D_n F_n(U).
-    Since this equation is valide on the entire problem domain, Omega, we should
+    Since this equation is valid on the entire problem domain, Omega, we should
     also have
         \int_{\Omega} w DF(U) dX = \sum_{i = 1}^{n} c_i \int_{\Omega} w D_i F_i(U) dX
     for any function , w, defined on Omega. Since the neural network, U, and
@@ -125,7 +128,8 @@ def Weak_Form_Loss( U                   : Neural_Network,
     ----------------------------------------------------------------------------
     Returns:
 
-    A single element tensor whose lone element holds the weak form loss. """
+    A single element tensor whose lone element holds the weak form loss. 
+    """
 
 
     ############################################################################
@@ -206,7 +210,8 @@ def Weak_Form_Loss( U                   : Neural_Network,
 
 def Lp_Loss(Xi  : torch.Tensor,
             p   : float):
-    """ This function approximates the L0 norm of Xi using the following
+    """ 
+    This function approximates the L0 norm of Xi using the following
     quantity:
         w_1*|Xi[1]|^2 + w_2*|Xi[2]|^2 + ... + w_N*|Xi[N]|^2
     Where, for each k,
@@ -224,11 +229,12 @@ def Lp_Loss(Xi  : torch.Tensor,
     Returns:
 
         w_1*|Xi[1]|^p + w_2*|Xi[2]|^p + ... + w_N*|Xi[N]|^p
-    where N is the number of components of Xi. """
+    where N is the number of components of Xi. 
+    """
 
     assert(p > 0 and p < 2)
 
-    # First, square the components of Xi. Also, make a doule precision copy of
+    # First, square the components of Xi. Also, make a double precision copy of
     # Xi that is detached from Xi's graph.
     delta : float = .000001;
     Xi_2          = torch.mul(Xi, Xi);
@@ -244,10 +250,10 @@ def Lp_Loss(Xi  : torch.Tensor,
         # Now, evaluate W[k].
         W_k  = 1./max(delta, Abs_Xi_k**(2 - p));
 
-        # Check for infinity (which can happen, unfortuneatly, if delta is too
+        # Check for infinity (which can happen, unfortunately, if delta is too
         # small). If so, remedy it.
         if(math.isinf(W_k)):
-            print("W_k got to infinty");
+            print("W_k got to infinity");
             print("Abs_Xi_k = %f" % Abs_Xi_k);
             W_k = 0;
 
@@ -256,3 +262,47 @@ def Lp_Loss(Xi  : torch.Tensor,
     # Finally, evaluate the element-wise product of Xi and W[k].
     W_Xi_2 = torch.mul(W, Xi_2);
     return W_Xi_2.sum();
+
+
+
+def L2_Squared_Loss(U : Network) -> torch.Tensor:
+    """
+    This function returns the sum of the squares of U's parameters. Suppose
+    that U has P \in \mathbb{N} parameters (weights, biases, RNN coefficients). 
+    Suppose we enumerate those parameters and let \Theta \in \mathbb{R}^P be 
+    a vector whose ith element is the ith parameter in the enumeration. This 
+    function returns ||U||_2^2.
+
+    ---------------------------------------------------------------------------
+    Arguments:
+
+    U: A neural network object.
+
+    ---------------------------------------------------------------------------
+    Returns:
+
+    A single element tensor whose lone element holds the square of the L2 norm 
+    of U's parameter vector.
+    """
+
+    # Setup. 
+    L2_Loss     : torch.Tensor  = torch.zeros(1, dtype = torch.float32);
+    Num_Layers  : int           = U.Num_Layers;
+
+    for i in range(Num_Layers):
+        # We build up the loss one layer at a time. To do this, we add the 
+        # L2 norm squared of the weight matrix and bias vector of each layer.
+        W_i : torch.Tensor = U.Layers[i].weight;
+        b_i : torch.Tensor = U.Layers[i].bias;
+
+        Loss += torch.sum(torch.multiply(W_i, W_i));
+        Loss += torch.sum(torch.multiply(b_i, b_i));
+    
+        # If this is a rational layer, we need to add its parameters.
+        AF_i : torch.nn.Module = U.Activation_Functions[i];
+        if(isinstance(AF_i, Rational)):
+            Loss += torch.sum(torch.multiply(AF_i.a, AF_i.a));
+            Loss += torch.sum(torch.multiply(AF_i.b, AF_i.b));
+
+    # All done!
+    return Loss;

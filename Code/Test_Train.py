@@ -1,4 +1,4 @@
-# Nonsense to add Classes diectory to the Python search path.
+# Nonsense to add Classes directory to the Python search path.
 import os
 import sys
 
@@ -13,7 +13,7 @@ import  numpy       as np;
 import  torch;
 from    typing      import List, Tuple;
 
-from Network            import Neural_Network;
+from Network            import Network;
 from Loss               import Data_Loss, Weak_Form_Loss, Lp_Loss;
 from Library_Term       import Library_Term;
 from Weight_Function    import Weight_Function;
@@ -21,7 +21,7 @@ from Weight_Function    import Weight_Function;
 
 
 def Training(
-        U                                   : Neural_Network,
+        U                                   : Network,
         Xi                                  : torch.Tensor,
         Inputs                              : torch.Tensor,
         Targets                             : torch.Tensor,
@@ -34,7 +34,8 @@ def Training(
         Lambda                              : float,
         Optimizer                           : torch.optim.Optimizer,
         Device                              : torch.device = torch.device('cpu')) -> None:
-    """ This function runs one epoch of training. We enforce the learned PDE
+    """ 
+    This function runs one epoch of training. We enforce the learned PDE
     (library-Xi product) at the Coll_Points. We also make U match the
     Targets at the Inputs.
 
@@ -43,7 +44,7 @@ def Training(
 
     U: The network that approximates the PDE solution.
 
-    Xi: The vector that stores the coeffcients of the library terms.
+    Xi: The vector that stores the coefficients of the library terms.
 
     Coll_Points: the collocation points at which we enforce the learned
     PDE. If U accepts d spatial coordinates, then this should be a d+1 column
@@ -53,14 +54,14 @@ def Training(
     Inputs: A tensor holding the coordinates of the points at which we
     compare the approximate solution to the true one. If U accepts d spatial
     coordinates, then this should be a d+1 column tensor whose ith row holds the
-    t, x_1,... x_d coordinates of the ith Datapoint.
+    t, x_1,... x_d coordinates of the ith Data-point.
 
     Targets: A tensor holding the value of the true solution at the data
     points. If Inputs has N rows, then this should be an N element tensor
     of floats whose ith element holds the value of the true solution at the ith
     data point.
 
-    LHS_Term: The Library Term (trial functiom + derivative) that appears on
+    LHS_Term: The Library Term (trial function + derivative) that appears on
     the left hand side of the PDE. This is generally a time derivative of U.
 
     RHS_Terms: A list of the Library terms (trial function + derivative)
@@ -98,7 +99,8 @@ def Training(
     ----------------------------------------------------------------------------
     Returns:
 
-    Nothing! """
+    Nothing! 
+    """
 
     # Put U in training mode.
     U.train();
@@ -130,7 +132,7 @@ def Training(
                 Lambda*Lp_Loss( Xi      = Xi,
                                 p       = p));
 
-        # Back-propigate to compute gradients of Loss with respect to network
+        # Back-propagate to compute gradients of Loss with respect to network
         # parameters (only do if this if the loss requires grad)
         if (Loss.requires_grad == True):
             Loss.backward();
@@ -143,8 +145,8 @@ def Training(
 
 
 def Testing(
-        U                                   : Neural_Network,
-        Xi                                  : Neural_Network,
+        U                                   : Network,
+        Xi                                  : torch.Tensor,
         Inputs                              : torch.Tensor,
         Targets                             : torch.Tensor,
         LHS_Term                            : Library_Term,
@@ -155,7 +157,8 @@ def Testing(
         p                                   : float,
         Lambda                              : float,
         Device                              : torch.device = torch.device('cpu')) -> Tuple[float, float]:
-    """ This function evaluates the losses.
+    """ 
+    This function evaluates the losses.
 
     Note: You CAN NOT run this function with no_grad set True. Why? Because we
     need to evaluate derivatives of U with respect to its inputs to evaluate
@@ -166,7 +169,7 @@ def Testing(
 
     U: The network that approximates the PDE solution.
 
-    Xi: The vector that stores the coeffcients of the library terms.
+    Xi: The vector that stores the coefficients of the library terms.
 
     Coll_Points: the collocation points at which we enforce the learned
     PDE. If U accepts d spatial coordinates, then this should be a d+1 column
@@ -176,7 +179,7 @@ def Testing(
     Inputs: A tensor holding the coordinates of the points at which we
     compare the approximate solution to the true one. If u accepts d spatial
     coordinates, then this should be a d+1 column tensor whose ith row holds the
-    t, x_1,... x_d coordinates of the ith Datapoint.
+    t, x_1,... x_d coordinates of the ith Data-point.
 
     Targets: A tensor holding the value of the true solution at the data
     points. If Targets has N rows, then this should be an N element tensor
@@ -186,7 +189,7 @@ def Testing(
     Time_Derivative_Order: We try to solve a PDE of the form (d^n U/dt^n) =
     N(U, D_{x}U, ...). This is the 'n' on the left-hand side of that PDE.
 
-    LHS_Term: The Library Term (trial functiom + derivative) that appears on
+    LHS_Term: The Library Term (trial function + derivative) that appears on
     the left hand side of the PDE. This is generally a time derivative of U.
 
     RHS_Terms: A list of the Library terms (trial function + derivative)
@@ -212,7 +215,8 @@ def Testing(
     Returns:
 
     a tuple of floats. The first element holds the Data_Loss. The second
-    holds the Weak_Form_Loss. The third holds Lambda times the Lp_Loss. """
+    holds the Weak_Form_Loss. The third holds Lambda times the Lp_Loss. 
+    """
 
     # Put U in evaluation mode
     U.eval();

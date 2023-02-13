@@ -13,7 +13,8 @@ def Index_After_Phrase(
         Line_In   : str,
         Phrase_In : str,
         Case_Sensitive : bool = False) -> int:
-    """ This function searches for the substring Phrase_In within Line_In.
+    """ 
+    This function searches for the substring Phrase_In within Line_In.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -31,7 +32,8 @@ def Index_After_Phrase(
 
     If Phrase_In is a substring of Line_In, then this returns the index of the
     first character after the first instance of Phrase_In within Line_In. If
-    Phrase_In is NOT a substring of Line_In, then this function returns -1. """
+    Phrase_In is NOT a substring of Line_In, then this function returns -1. 
+    """
 
     # First, get the number of characters in Line/Phrase.
     Num_Chars_Line   : int = len(Line_In);
@@ -60,7 +62,7 @@ def Index_After_Phrase(
         # so, check if  Line[i + j] == Phrase[j] for each for each j in {0,...
         # Num_Chars_Phrase - 1}.
         if(Line[i] == Phrase[0]):
-            Match : Bool = True;
+            Match : bool = True;
 
             for j in range(1, Num_Chars_Phrase):
                 # If Line[i + j] != Phrase[j], then we do not have a match and
@@ -76,7 +78,7 @@ def Index_After_Phrase(
                 return i + Num_Chars_Phrase;
 
     # If we're here, then Phrase is NOT a substring of Line. Return -1 to
-    # indiciate that.
+    # indicate that.
     return -1;
 
 
@@ -86,7 +88,8 @@ def Read_Line_After(
         Phrase         : str,
         Comment_Char   : str = '#',
         Case_Sensitive : bool = False) -> str:
-    """ This function tries to find a line of File that contains Phrase as a
+    """ 
+    This function tries to find a line of File that contains Phrase as a 
     substring. Note that we start searching at the current position of the file
     pointer. We do not search from the start of File.
 
@@ -115,7 +118,8 @@ def Read_Line_After(
     everything in that line after the first occurrence of Phrase. If it can't
     find Phrase in one of File's lines, it raises an exception. If the Phrase is
     "cat is", and one of File's lines is "the cat is fat", then this will return
-    " fat". """
+    " fat". 
+    """
 
     # Search the lines of File for one that contains Phrase as a substring.
     while(True):
@@ -123,7 +127,7 @@ def Read_Line_After(
         Line = File.readline();
 
         # Check if we've reached the end of file. Python doesn't use end of file
-        # characters. However, readline will retun an empty string if and only
+        # characters. However, readline will return an empty string if and only
         # if we're at the end of File. Thus, we can use this as our "end of
         # file" check
         if(Line == ""):
@@ -153,7 +157,8 @@ def Read_Line_After(
 
 
 def Read_Bool_Setting(File, Setting_Name : str) -> bool:
-    """ Reads a boolean setting from File.
+    """ 
+    Reads a boolean setting from File.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -161,12 +166,13 @@ def Read_Bool_Setting(File, Setting_Name : str) -> bool:
     File: The file we want to read the setting from.
 
     Setting_Name: The name of the setting we're reading. We need this in case
-    of an error, so that we can print the appropiate error message.
+    of an error, so that we can print the appropriate error message.
 
     ----------------------------------------------------------------------------
     Return:
 
-    The value of the boolean setting. """
+    The value of the boolean setting. 
+    """
 
     # Read the setting. This will yield a string.
     Buffer = Read_Line_After(File, Setting_Name).strip();
@@ -194,7 +200,7 @@ def Read_Setting(File, Setting_Name : str) -> str:
     File: The file we want to read the setting from.
 
     Setting_Name: The name of the setting we're reading. We need this in case
-    of an error, so that we can print the appropiate error message.
+    of an error, so that we can print the appropriate error message.
 
     ----------------------------------------------------------------------------
     Return:

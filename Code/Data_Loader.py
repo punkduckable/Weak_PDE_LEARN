@@ -11,7 +11,8 @@ class Data_Container:
 
 def Data_Loader(DataSet_Name   : str,
                 Device         : torch.device):
-    """ This function loads a DataSet from file, converts it contents to a torch
+    """ 
+    This function loads a DataSet from file, converts it contents to a torch
     Tensor, and returns the result.
 
     ----------------------------------------------------------------------------
@@ -26,7 +27,8 @@ def Data_Loader(DataSet_Name   : str,
     Returns:
 
     A Data Container object. What's in that container depends on which mode
-    we're in. """
+    we're in. 
+    """
 
     # Load the DataSet.
     DataSet_Path    = "../Data/DataSets/" + DataSet_Name + ".npz";

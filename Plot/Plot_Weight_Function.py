@@ -1,4 +1,4 @@
-# Nonsense to add Code diectory to the Python search path.
+# Nonsense to add Code directory to the Python search path.
 import os
 import sys
 
@@ -30,11 +30,13 @@ def Plot_Bump(  w       : Weight_Function,
                 Dim_1   : int,
                 m       : int,
                 Coords  : torch.Tensor) -> None:
-    """ This function plots a slice of the Weight Function, w. If w is a
+    """ 
+    This function plots a slice of the Weight Function, w. If w is a
     function of two variables (t and x), then this simply plots w. Otherwise,
     it plots a slice of w. To see this, suppose that Dim_0 = 0, Dim_1 = 1 and
-    w is defined on R^4. Then, if w is centered about X_0, we plot w restriced
-    to the domain [a, b] x [c, d] x X_0[3] x X_0[4], for some a, b, c, d. """
+    w is defined on R^4. Then, if w is centered about X_0, we plot w restricted
+    to the domain [a, b] x [c, d] x X_0[3] x X_0[4], for some a, b, c, d. 
+    """
 
     # First, get the center and radius of w.
     Center : torch.Tensor   = w.X_0;
@@ -107,7 +109,7 @@ def Plot_Bump_Derivative(   w           : Weight_Function,
 def main():
     # Set center, radius of weight function.
     Center : torch.Tensor   = torch.tensor([0, 0], dtype = torch.float32);
-    Radius : float          = 1;
+    Radius : float          = 3;
 
 
     ############################################################################
@@ -126,7 +128,7 @@ def main():
     c : float = -3.0*Radius;
     d : float = 3.0*Radius;
 
-    # Place a grid on this box with m gridlines along each axis.
+    # Place a grid on this box with m grid-lines along each axis.
     m : int = 300;
     Dim0_Pts : numpy.ndarray = numpy.linspace(start = a, stop = b, num = m);
     Dim1_Pts : numpy.ndarray = numpy.linspace(start = c, stop = d, num = m);

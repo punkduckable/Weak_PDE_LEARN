@@ -18,7 +18,8 @@ class Settings_Container:
 # Functions
 
 def Settings_Reader() -> Settings_Container:
-    """ This function reads the settings in Settings.txt.
+    """ 
+    This function reads the settings in Settings.txt.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -29,9 +30,10 @@ def Settings_Reader() -> Settings_Container:
     Returns:
 
     A Settings_Container object that contains all the settings we read from
-    Settings.txt. The main function uses these to set up the program. """
+    Settings.txt. The main function uses these to set up the program. 
+    """
 
-    # Open file, initialze a Settings object.
+    # Open file, initialize a Settings object.
     File = open("../Settings.txt", "r");
     Settings = Settings_Container();
 

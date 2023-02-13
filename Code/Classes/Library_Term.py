@@ -4,7 +4,8 @@ import Trial_Function;
 
 
 class Library_Term():
-    """ This class represents a Library term (derivative + trial function).
+    """ 
+    This class represents a Library term (derivative + trial function).
 
     ----------------------------------------------------------------------------
     Members:
@@ -13,24 +14,29 @@ class Library_Term():
     library term (this may be the identity).
 
     Trial_Function: A Trial_Function object that houses the trial function
-    portion of this library term. """
+    portion of this library term. 
+    """
 
     def __init__(   self,
                     Derivative      : Derivative.Derivative,
                     Trial_Function  : Trial_Function.Trial_Function) -> None:
-        """ Initializer.
+        """ 
+        Initializer.
 
         ------------------------------------------------------------------------
         Arguments:
 
-        Derivative, Trial_Function: See class docstring. """
+        Derivative, Trial_Function: See class docstring. 
+        """
 
         self.Derivative     = Derivative;
         self.Trial_Function = Trial_Function;
 
     def __str__(self) -> str:
-        """ This function returns a human-readable form of the Library term that
-        this object represents."""
+        """ 
+        This function returns a human-readable form of the Library term that 
+        this object represents.
+        """
 
         Buffer : str = "";
 

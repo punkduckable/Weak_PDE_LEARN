@@ -1,4 +1,4 @@
-# Nonsense to add Code diectory to the Python search path.
+# Nonsense to add Code dirctory to the Python search path.
 import os
 import sys
 
@@ -22,7 +22,8 @@ from    Library_Term    import Library_Term;
 
 
 def Parse_Trial_Function(Buffer : str):
-    """ This function reads a Trial Function from the string "Buffer".
+    """ 
+    This function reads a Trial Function from the string "Buffer".
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -32,7 +33,8 @@ def Parse_Trial_Function(Buffer : str):
         S_1(U)*S_2(U)*...*S_K(U)
     Currently, we require each S_i(U) to be either 1, U, or U^p, for some p > 1.
     We may weaken this constraint in the future. There should be no whitespace
-    in this expression. """
+    in this expression. 
+    """
 
     Power : int = 0;
 
@@ -43,7 +45,7 @@ def Parse_Trial_Function(Buffer : str):
     # We now read in each S_i(U)
     for i in range(Num_Components):
         # Recall that S_i(U) is either U or U^p, for some p > 0. We handle these
-        # cases separatly.
+        # cases separately.
         if  ('^' in Components[i]):
             Power += int(Components[i][-1]);
         elif(Components[i] == "1"):
@@ -58,7 +60,8 @@ def Parse_Trial_Function(Buffer : str):
 
 
 def Parse_Library_Term(Buffer : str) -> Library_Term:
-    """ This function parses a library term from a line of the Library file.
+    """ 
+    This function parses a library term from a line of the Library file.
     The "Buffer" argument should be a stripped line of Library.txt that contains
     a library term. In general, Read_Library_Term is the only function that
     should call this one. We read the library term within, and then process it.
@@ -67,12 +70,13 @@ def Parse_Library_Term(Buffer : str) -> Library_Term:
     Arguments:
 
     Buffer: A stripped line containing a library term (derivative + trial
-    function). """
+    function). 
+    """
 
     # First, split the line by spaces.
     Components : List[str] = Buffer.split(" ");
 
-    # First, parse the library term (which should be the last component).
+    # Second, parse the trial function (which should be the last component).
     F : Trial_Function = Parse_Trial_Function(Components[-1]);
 
     # Next, parse the derivatives. If there is no derivative, then we can build
@@ -100,24 +104,24 @@ def Parse_Library_Term(Buffer : str) -> Library_Term:
         # the variable.
         Component : str = Component.split('_')[1];
 
-        i : int = 0;
+        j : int = 0;
         if  (Component[0] == 't'):
-            i = 0;
+            j = 0;
         elif(Component[0] == 'x'):
-            i = 1;
+            j = 1;
         elif(Component[0] == 'y'):
-            i = 2;
+            j = 2;
         elif(Component[0] == 'z'):
-            i = 3;
+            j = 3;
         else:
             raise Read_Error("Derivative term has the wrong format. Buffer = "  + Buffer);
 
         # Each derivative term should either be of the form D_s or D_s^p. We
-        # handle these cases separatly.
+        # handle these cases separately.
         p : int = 1;
         if  ('^' in Component):
             p : int = int(Component[-1]);
-        Encoding[i] += p;
+        Encoding[j] += p;
 
     # Now, trim down the encoding (if possible).
     if(Encoding[3] == 0):
@@ -135,21 +139,24 @@ def Parse_Library_Term(Buffer : str) -> Library_Term:
 
 
 def Read_Library_Term(File):
-    """ This function reads a library term (derivative + trial function) from
-    the Library file. To do that, we search through the file for the first
-    line that is neither blank nor entirely a comment. We then parse the term
+    """ 
+    This function reads a library term (derivative + trial function) from the 
+    Library file. To do that, we search through the file for the first line 
+    that is neither blank nor entirely a comment. We then parse the term 
     within.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
-    File: The file we want to read a library term from. This file should contain
-    library terms (as strings) using the format specified in Library.txt. """
+    File: The file we want to read a library term from. This file should 
+    contain library terms (as strings) using the format specified in 
+    Library.txt. 
+    """
 
     # Look for the next line that contains a library function.
     Line : str = "";
     while(True):
-        # Get a candidiate line. This eliminates all lines that start with a
+        # Get a candidate line. This eliminates all lines that start with a
         # comment or are blank. It will not, however, eliminate lines filled
         # with whitespace.
         Line = Read_Line_After( File    = File,
@@ -172,7 +179,8 @@ def Read_Library_Term(File):
 
 
 def Read_Library(File_Path : str) -> Tuple[Library_Term, List[Library_Term]]:
-    """ This function reads the Library terms in Library.txt.
+    """ 
+    This function reads the Library terms in Library.txt.
 
     ----------------------------------------------------------------------------
     Arguments:

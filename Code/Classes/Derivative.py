@@ -3,7 +3,8 @@ import numpy;
 
 
 class Derivative():
-    """ Objects of this class house an abstract representation of a partial
+    """
+    Objects of this class house an abstract representation of a partial 
     derivative operator.
 
     ----------------------------------------------------------------------------
@@ -19,7 +20,8 @@ class Derivative():
     total number of partial derivatives we must take to apply a derivative
     operator to a function. We need this when computing the integral of a weight
     function times a library term (we apply integration by parts once for each
-    partial derivative in the Derivative operator). """
+    partial derivative in the Derivative operator). 
+    """
 
 
     def __init__(   self,
@@ -41,7 +43,7 @@ class Derivative():
         Input_Dim : int  = Encoding.size;
         assert(Input_Dim == 2 or Input_Dim == 3 or Input_Dim == 4);
 
-        # Calculate the order (total number of patial derivatives) of this
+        # Calculate the order (total number of partial derivatives) of this
         # derivative operator.
         self.Order : int = numpy.sum(Encoding).item();
 
@@ -55,9 +57,11 @@ class Derivative():
 
 
     def __str__(self) -> str:
-        """ This function returns a string that contains a human-readable
+        """ 
+        This function returns a string that contains a human-readable
         expression for the derivative operator that this object represents. It
-        is mainly used for printing. """
+        is mainly used for printing. 
+        """
 
         Buffer : str = "";
 

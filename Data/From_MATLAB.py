@@ -39,7 +39,8 @@ def From_MATLAB_1D( Data_File_Name      : str,
                     Noise_Proportion    : float,
                     Num_Train_Examples  : int,
                     Num_Test_Examples   : int) -> None:
-    """ This function loads a .mat data set with 1D data (one spatial variable,
+    """ 
+    This function loads a .mat data set with 1D data (one spatial variable,
     and one temporal variable) and generates a sparse and noisy data set from
     it. To do this, we first read in a .mat data set. We assume this file
     contains three fields: t, x, and usol. t and x are ordered lists of the t
@@ -70,7 +71,8 @@ def From_MATLAB_1D( Data_File_Name      : str,
     ----------------------------------------------------------------------------
     Returns:
 
-    Nothing! """
+    Nothing! 
+    """
 
     # Load data file.
     Data_File_Path = "../MATLAB/Data/" + Data_File_Name + ".mat";
@@ -159,7 +161,8 @@ def From_MATLAB_2D( Data_File_Name      : str,
                     Noise_Proportion    : float,
                     Num_Train_Examples  : int,
                     Num_Test_Examples   : int) -> None:
-    """ This function loads a .mat data set with 2D data (two spatial variables,
+    """ 
+    This function loads a .mat data set with 2D data (two spatial variables,
     and one temporal variable) and generates a sparse and noisy data set from
     it. To do this, we first read in a .mat data set. We assume this file
     contains four fields: t, x, y, and usol. t, x, and y are ordered lists of
@@ -190,7 +193,8 @@ def From_MATLAB_2D( Data_File_Name      : str,
     ----------------------------------------------------------------------------
     Returns:
 
-    Nothing! """
+    Nothing! 
+    """
 
     # Load data file.
     Data_File_Path = "../MATLAB/Data/" + Data_File_Name + ".mat";

@@ -1,13 +1,15 @@
 
 class Trial_Function():
-    """ Objects of this class hold an abstract representation of a trial.
+    """ 
+    Objects of this class hold an abstract representation of a trial.
 
     ----------------------------------------------------------------------------
     Members:
 
     Power: Currently, trial functions are restricted to the form U^p, for some
     p >= 0. The Power member specifies the value p. Thus, if T is a
-    Trial_Function object, and T.Power = 5, then T represents the function U^5. """
+    Trial_Function object, and T.Power = 5, then T represents the function U^5. 
+    """
 
     def __init__(   self,
                     Power : int) -> None:
@@ -22,8 +24,10 @@ class Trial_Function():
         self.Power = Power;
 
     def __str__(self) -> str:
-        """ This function returns a string that contains a human-readable form
-        of the object's trial function """
+        """ 
+        This function returns a string that contains a human-readable form of 
+        the object's trial function.
+        """
 
         Buffer : str = "";
 

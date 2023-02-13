@@ -17,12 +17,12 @@ import time;
 
 from Settings_Reader    import Settings_Reader, Settings_Container;
 from Loss               import Data_Loss, Lp_Loss, Weak_Form_Loss;
-from Network            import Rational, Neural_Network;
+from Network            import Rational, Network;
 from Data_Loader        import Data_Loader;
 from Test_Train         import Testing, Training;
 from Points             import Generate_Points, Setup_Partition;
 from Weight_Function    import Weight_Function;
-
+from Derivative         import Derivative;
 
 
 
@@ -33,7 +33,7 @@ def main():
         # Python does weird things if you want to print a list... so we have
         # to handle this case separately.
         if(isinstance(Value, list)):
-            # First, print the setting nane.
+            # First, print the setting name.
             print("%-25s = " % Setting, end = '');
 
             # Next, print the contents of the list, one by one.
@@ -106,7 +106,7 @@ def main():
             Min_Side_Length = Bounds[i, 1] - Bounds[i, 0];
 
     # Set up radius.
-    Radius  : float = Min_Side_Length*.4;
+    Radius  : float = Min_Side_Length*(.4);
 
     # Set up weight function centers.
     # If the problem domain is [a_1, b_1] x ... x [a_n, b_n], then we place the
@@ -114,7 +114,7 @@ def main():
     # where e = Epsilon is some small positive number (to ensure the weight
     # function support is in the domain).
     Epsilon         : float         = 0.00001;
-    Trimmed_Bounds  : numpy.ndarry  = numpy.empty_like(Bounds);
+    Trimmed_Bounds  : numpy.ndarray  = numpy.empty_like(Bounds);
 
     for i in range(Settings.Num_Dimensions):
         Trimmed_Bounds[i, 0] = Bounds[i, 0] + Radius + Epsilon;
@@ -146,7 +146,7 @@ def main():
     # Compute weight function derivatives.
 
     for i in range(Settings.Num_Weight_Functions):
-        w_i : weight_Function = Weight_Functions[i];
+        w_i : Weight_Function = Weight_Functions[i];
 
         # First, add the LHS Term derivative.
         w_i.Add_Derivative(Settings.LHS_Term.Derivative);
@@ -168,7 +168,7 @@ def main():
             Device              = Settings.Device);
 
     # We set up Xi as a Parameter for.... complicated reasons. In pytorch, a
-    # paramater is basically a special tensor that is supposed to be a trainable
+    # parameter is basically a special tensor that is supposed to be a trainable
     # part of a module. It acts just like a regular tensor, but almost always
     # has requires_grad set to true. Further, since it's a sub-class of Tensor,
     # we can distinguish it from regular Tensors. In particular, optimizers

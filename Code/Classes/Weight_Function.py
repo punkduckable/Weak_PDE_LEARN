@@ -7,14 +7,13 @@ from Derivative             import Derivative;
 
 
 class Weight_Function(torch.nn.Module):
-    """ Objects of this class are bump functions with a specified radius, X_0,
-    and radius, r. In particular, each object of this class represents the
-    function w : R^n -> R defined by
-        w(X) =  { prod_{i = 1}^{n} (-(X_i - X_0_i - r)(X_i - X_0_i + r)/r^2)^{p_i}  if ||X - X_0||_{max} < r
-                { 0                                                                 otherwise
-    where p_1, ... , p_n are positive integers. The partial derivative D w(X),
-    where D = D_{x_1}^{m_1} D_{x_2}^{m_2} ... D_{x_n}^{m_n}, is defined so
-    long as m_1 < p_1, ... , m_n < p_n.
+    """ 
+    Objects of this class are bump functions with a specified radius, X_0, and 
+    radius, r. In particular, each object of this class represents the function 
+    w : R^n -> R defined by
+        w(X) =  { prod_{i = 1}^{n} exp(5 r^2/((X_i - X_0_i)^2 - r^2) + 5)   if ||X - X_0||_{max} < r
+                { 0                                                         otherwise
+    where p_1, ... , p_n are positive integers. Such a function is C^infinity
 
     A weight function is always paired with a set of coordinates. We assume that
     you'll want to compute various integrals of the form
@@ -27,7 +26,7 @@ class Weight_Function(torch.nn.Module):
 
     Using the same set of coordinates for each integral also allows for a key
     performance breakthrough: We only need to evaluate w and its derivatives at
-    the coordiantes once. Once we have these values, we can then use them each
+    the coordinates once. Once we have these values, we can then use them each
     time we want to compute an integral involving w (or its derivatives). This
     is why weight function objects have the "Derivatives" dictionary. This
     dictionary stores the various derivatives of w, evaluated at the set of
@@ -55,9 +54,6 @@ class Weight_Function(torch.nn.Module):
     r : the radius of the bump function. The bump function is zero outside of
     B_r(X_0).
 
-    Powers : w (see above) depends on positive integers p_1, p_2, ... , p_n.
-    Powers is a A 1D, n element tensor whose ith entry is p_i.
-
     Input_Dim : w (see above) is defined on R^n. This is n.
 
     Num_Coords : The number of rows in the Coords tensor passed to the
@@ -75,14 +71,16 @@ class Weight_Function(torch.nn.Module):
     Derivatives : A dictionary that holds various derivatives of w evaluated at
     Supported_Coords. For this dictionary, an elements key is a Derivative
     object's encoding array. Its value is a torch tensor that holds the value of
-    the corresponding derivative of the weight function at a set of coordinates. """
+    the corresponding derivative of the weight function at a set of coordinates. 
+    """
 
     def __init__(   self,
                     X_0     : torch.Tensor,
                     r       : float,
                     Powers  : torch.Tensor,
                     Coords  : torch.Tensor) -> None:
-        """ Class initializer.
+        """ 
+        Class initializer.
 
         ------------------------------------------------------------------------
         Arguments:
@@ -91,13 +89,17 @@ class Weight_Function(torch.nn.Module):
 
         r : The radius of the weight function. See class docstring.
 
-        Powers : the vector whose ith entry is p_i. See class docstring.
+        Powers : A list of integers. We are using Polynomial weight functions,
+        then this defines the function (as well as how many derivatives we can
+        take). If we are using bump functions (either kind), then this is an
+        unused parameter.
 
         Coords : A list of coordinates. Whenever we apply a derivative to w, we
         evaluate (and store) the derivative at the coordinates in Coords. We
         assume this is a B by n dimensional array whose ith row holds the ith
         coordinate. Here, B is the number of coordinates and n is the number of
-        components in each coordinate. """
+        components in each coordinate. 
+        """
 
         # First, call the module initializer.
         super(Weight_Function, self).__init__();
@@ -148,7 +150,8 @@ class Weight_Function(torch.nn.Module):
     # Polynomial. If using, weight functions need a "Powers" attribute and use
     # inf norm to determine supported points.
     #def forward(self, X : torch.Tensor) -> torch.Tensor:
-        """ This method evaluates the weight function at each coordinate of X.
+        """ 
+        This method evaluates the weight function at each coordinate of X.
 
         ------------------------------------------------------------------------
         Arguments:
@@ -195,13 +198,15 @@ class Weight_Function(torch.nn.Module):
         w_X[Supported_Indices]              = w_X_Supported;
 
         # Return!
-        return w_X;"""
+        return w_X;
+        """
 
 
 
     # Bump in R^n. If using, make init use 2 norm to determine supported points.
     #def forward(self, X : torch.Tensor) -> torch.Tensor:
-        """ This method evaluates the weight function at each coordinate of X.
+        """ 
+        This method evaluates the weight function at each coordinate of X.
 
         ------------------------------------------------------------------------
         Arguments:
@@ -216,8 +221,8 @@ class Weight_Function(torch.nn.Module):
         A B element tensor whose ith entry is w evaluated at the ith coordinate
         (ith row of X). """
         """
-        # w(X) = { exp( 7.5^3/(||X - X_0||^2 - r^2) + 7.5 )   if || X - X_0|| < r.
-        #        { 0                                        otherwise
+        # w(X) = { exp( 7.5r^2/(||X - X_0||^2 - r^2) + 7.5 )    if || X - X_0|| < r.
+        #        { 0                                            otherwise
 
         # First, calculate || X - X_0 ||_2^2.
         XmX0                : torch.Tensor  = torch.subtract(X, self.X_0);
@@ -237,14 +242,16 @@ class Weight_Function(torch.nn.Module):
         w_X[Indices_In_BrX0]                = w_X_In_BrX0;
 
         # Return!
-        return w_X;"""
+        return w_X;
+        """
 
 
 
     # Product of 1D bumps. If using, make init use inf norm to determine
     # supported points.
     def forward(self, X : torch.Tensor) -> torch.Tensor:
-        """ This method evaluates the weight function at each coordinate of X.
+        """ 
+        This method evaluates the weight function at each coordinate of X.
 
         ------------------------------------------------------------------------
         Arguments:
@@ -257,7 +264,8 @@ class Weight_Function(torch.nn.Module):
         Returns:
 
         A B element tensor whose ith entry is w evaluated at the ith coordinate
-        (ith row of X). """
+        (ith row of X). 
+        """
 
         # w(X) =    { prod_{i = 1}^{n} exp(5*r^2/((X_i - X_0_i)^2 - r^2) + 5)   if ||X - X_0||_{max} < r
         #           { 0                                                         otherwise
@@ -325,9 +333,10 @@ class Weight_Function(torch.nn.Module):
 
 
     def Get_Derivative(self, D : Derivative) -> torch.Tensor:
-        """ This function returns D(w) evalauated on the set of Coordinates we
-        used to intialize w. This assumes we already evaluated D(w) using
-        the Add_Derivative method.
+        """ 
+        This function returns D(w) evaluated on the set of Coordinates we used 
+        to initialize w. This assumes we already evaluated D(w) using the 
+        Add_Derivative method.
 
         ------------------------------------------------------------------------
         Arguments:
@@ -339,12 +348,13 @@ class Weight_Function(torch.nn.Module):
         Returns:
 
         The entry of self.Derivatives corresponding to D. This should be an
-        1D array whose entries are D(w) at some set of coordinates. """
+        1D array whose entries are D(w) at some set of coordinates. 
+        """
 
         # First, get D(w) at self.Supported_Coords.
         Dw_Supported_Coords : torch.Tensor = self.Derivatives[tuple(D.Encoding)];
 
-        # Next, extrpolate this derivative to the original set of Coordinates
+        # Next, extrapolate this derivative to the original set of Coordinates
         # we used to initialize w.
         Dw : torch.Tensor           = torch.zeros(self.Num_Coords, dtype = torch.float32);
         Dw[self.Supported_Indices]  = Dw_Supported_Coords;
@@ -358,9 +368,10 @@ def Evaluate_Derivative(
         w           : Weight_Function,
         D           : Derivative,
         Coords      : torch.Tensor) -> torch.Tensor:
-    """ This function applies a particular partial derivative operator, D, of
-    a weight function, w, and then evaluates the resulting function on Coords.
-    In other words, this function evaluates D(w)(X), for each X in Coords.
+    """ 
+    This function applies a particular partial derivative operator, D, of a 
+    weight function, w, and then evaluates the resulting function on Coords. In 
+    other words, this function evaluates D(w)(X), for each X in Coords.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -385,7 +396,8 @@ def Evaluate_Derivative(
 
     This returns a 1D Tensor. If Coords has B rows, then the returned tensor has
     B elements. The ith component of the returned Tensor holds D(w) evaluated
-    at the ith coordinate (ith row of Coords). """
+    at the ith coordinate (ith row of Coords). 
+    """
 
     # First, we need to convert Coords to double precision. We need this to
     # prevent nan's from appearing when computing high order derivatives.
@@ -400,12 +412,12 @@ def Evaluate_Derivative(
     assert(D.Encoding.size <= w.Input_Dim);
 
     # We also need D.Encoding to be less (element-wise) than w.Powers.
-    Powers_np : numpy.ndarray = w.Powers.numpy();
-    assert(numpy.sum(D.Encoding >= Powers_np) == 0);
+    #Powers_np : numpy.ndarray = w.Powers.numpy();
+    #assert(numpy.sum(D.Encoding >= Powers_np) == 0);
 
     # Now, let's get to work. The plan is the following: Suppose we want to find
     # D_t^{m(t)} D_x^{m(x)} D_y^{m(y)} D_z^{m(z)} w. First, we compute
-    # D_t^{m(t)} w. From this, we calculuate D_x^{m(x)} D_t^{m(t)} w, and so on.
+    # D_t^{m(t)} w. From this, we calculate D_x^{m(x)} D_t^{m(t)} w, and so on.
     # We then use equality of mixed partials (remember, w is infinitely
     # differentiable) to rewrite this as the derivative we want.
     w_Coords : torch.Tensor = w(Coords).view(-1);
@@ -439,7 +451,7 @@ def Evaluate_Derivative(
     ############################################################################
     # x derivatives.
 
-    # Initialize Dx_Dt_w. If there are no x derivatives, then Dx_Dt_w = Dx_w.
+    # Initialize Dx_Dt_w. If there are no x derivatives, then Dx_Dt_w = Dt_w.
     Dx_Dt_w : torch.Tensor = Dt_w;
 
     Dx_Order : int = D.Encoding[1];
@@ -457,7 +469,6 @@ def Evaluate_Derivative(
 
             # Update Dx_Dt_w (this replaces D_x^{k - 1} Dt_w with D_x^k Dt_w)
             Dx_Dt_w = Grad_Dx_Dt_w[:, 1].view(-1);
-
 
 
 

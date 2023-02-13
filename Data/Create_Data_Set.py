@@ -8,7 +8,8 @@ def Create_Data_Set(        Name            : str,
                             Test_Inputs     : numpy.ndarray,
                             Test_Targets    : numpy.ndarray,
                             Input_Bounds    : numpy.ndarray) -> None:
-    """ This function generates a DataSet (a file in Data/DataSets) with a
+    """ 
+    This function generates a DataSet (a file in Data/DataSets) with a
     specified Name, set of inputs, target values, and problem domain bounds. We
     assume the inputs are a rectangle in R^n. That is, there is some {a_1, ... ,
     a_n, b_1, ... , b_n} such that each input (test and train) is in the set
@@ -37,7 +38,8 @@ def Create_Data_Set(        Name            : str,
     ----------------------------------------------------------------------------
     Returns:
 
-    Nothing! """
+    Nothing! 
+    """
 
     # Fist, open the file.
     Path : str = "./DataSets/" + Name + ".npz";
