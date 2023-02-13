@@ -7,15 +7,18 @@ from Create_Data_Set import Create_Data_Set;
 
 
 
-Make_Plot : bool = False;
+Make_Plot           : bool  = True;
+Transparent_Plot    : bool  = False;
+
+
 
 def main():
     # Specify settings.
-    Data_File_Name          : str   = "Burgers_Sine";
+    Data_File_Name          : str   = "KS_Sine";
     Num_Spatial_Dimensions  : int   = 1;
-    Noise_Proportion        : float = 0.0;
+    Noise_Proportion        : float = 0.5;
 
-    Num_Train_Examples      : int   = 10000;
+    Num_Train_Examples      : int   = 4000;
     Num_Test_Examples       : int   = 1000;
 
     # Now pass them to "From_MATLAB".
@@ -32,7 +35,6 @@ def main():
 
 
 
-
 def From_MATLAB_1D( Data_File_Name      : str,
                     Noise_Proportion    : float,
                     Num_Train_Examples  : int,
@@ -41,9 +43,9 @@ def From_MATLAB_1D( Data_File_Name      : str,
     and one temporal variable) and generates a sparse and noisy data set from
     it. To do this, we first read in a .mat data set. We assume this file
     contains three fields: t, x, and usol. t and x are ordered lists of the t
-    and x grid lines (lines along which there are gridpoints), respectively. We
+    and x grid lines (lines along which there are grid-points), respectively. We
     assume that the values in x are uniformly spaced. u sol contains the value
-    of the true solution at each gridpoint. Each row of usol contains the
+    of the true solution at each grid-point. Each row of usol contains the
     solution for a particular position, while each column contains the solution
     for a particular time.
 
@@ -99,6 +101,10 @@ def From_MATLAB_1D( Data_File_Name      : str,
         Data_min : float = numpy.min(Noisy_Data_Set) - epsilon;
         Data_max : float = numpy.max(Noisy_Data_Set) + epsilon;
 
+        # If we want to make a transparent plot, we need a dark background.
+        if(Transparent_Plot == True):
+            pyplot.style.use('dark_background');
+
         # Plot!
         pyplot.contourf(    t_coords_matrix,
                             x_coords_matrix,
@@ -109,10 +115,11 @@ def From_MATLAB_1D( Data_File_Name      : str,
         pyplot.colorbar();
         pyplot.xlabel("t");
         pyplot.ylabel("x");
+        pyplot.savefig("../Figures/" + Data_File_Name + "_Dataset.png", dpi = 500, transparent = Transparent_Plot);
         pyplot.show();
 
     # Now, stitch successive the rows of the coordinate matrices together
-    # to make a 1D array. We interpert the result as a 1 column matrix.
+    # to make a 1D array. We interpret the result as a 1 column matrix.
     t_coords_1D : numpy.ndarray = t_coords_matrix.flatten().reshape(-1, 1);
     x_coords_1D : numpy.ndarray = x_coords_matrix.flatten().reshape(-1, 1);
 
@@ -124,15 +131,15 @@ def From_MATLAB_1D( Data_File_Name      : str,
     # distribution over subsets of {1, ... , N} of size Num_Train_Examples,
     # and another over subsets of {1, ... , N} of size Num_Test_Examples.
     # Here, N is the number of coordinates.
-    Train_Indicies : numpy.ndarray = numpy.random.choice(All_Data_Coords.shape[0], Num_Train_Examples, replace = False);
-    Test_Indicies  : numpy.ndarray = numpy.random.choice(All_Data_Coords.shape[0], Num_Test_Examples , replace = False);
+    Train_Indices : numpy.ndarray = numpy.random.choice(All_Data_Coords.shape[0], Num_Train_Examples, replace = False);
+    Test_Indices  : numpy.ndarray = numpy.random.choice(All_Data_Coords.shape[0], Num_Test_Examples , replace = False);
 
     # Now select the corresponding testing, training data points/values.
-    Train_Inputs    = All_Data_Coords[Train_Indicies, :];
-    Train_Targets   = All_Data_Values[Train_Indicies];
+    Train_Inputs    = All_Data_Coords[Train_Indices, :];
+    Train_Targets   = All_Data_Values[Train_Indices];
 
-    Test_Inputs     = All_Data_Coords[Test_Indicies, :];
-    Test_Targets    = All_Data_Values[Test_Indicies];
+    Test_Inputs     = All_Data_Coords[Test_Indices, :];
+    Test_Targets    = All_Data_Values[Test_Indices];
 
     # Send everything to Create_Data_Set
     DataSet_Name : str = (  Data_File_Name + "_" +
