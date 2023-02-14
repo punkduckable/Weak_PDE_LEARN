@@ -35,10 +35,9 @@ def Training(
         Device                              : torch.device = torch.device('cpu')) -> Dict:
     """ 
     This function runs one epoch of training. For each network, we evaluate 
-    the weak form loss and try to make the ith system response function match 
-    the ith dataset. We also evaluate the Lp loss of Xi. Once we've evaluated 
-    each loss, use back-propagation to update each network's parameters (along 
-    with xi).
+    the weak form , data, and L2 losses.. We also evaluate the Lp loss of 
+    Xi. Once we evaluate each loss, we compute the total loss and then use 
+    back-propagation to update each network's parameters (along with xi).
 
     ---------------------------------------------------------------------------
     Arguments:
@@ -72,16 +71,12 @@ def Training(
     of weight functions that we use to enforce the weak form loss for the 
     ith system response function. 
 
-    Col_Number_to_Multi_Index: A mapping which sends column numbers to
-    Multi-Indices. Coll_Loss needs this function. This should be an instance of
-    the Col_Number_to_Multi_Index_Class class.
-
     p: the settings value for p in "Lp" loss function.
 
     Weights: A dictionary of floats. It should have keys for "Lp", "Weak", and 
     "Data".
 
-    optimizer: the optimizer we use to train U and Xi. It should have been 
+    Optimizer: the optimizer we use to train U and Xi. It should have been 
     initialized with both network's parameters.
 
     Device: The device for U and Xi.
@@ -172,10 +167,10 @@ def Training(
             Total_Loss_List[i]  = ith_Total_Loss_Value.detach().item();
 
             # Finally, accumulate the losses.
-            Weak_Loss_Value             += ith_Weak_Form_Loss_Value;
-            Data_Loss_Value             += ith_Data_Loss_Value;
-            L2_Loss_Value               += ith_L2_Loss_Value;
-            Total_Loss_Value            += ith_Total_Loss_Value;
+            Weak_Loss_Value     += ith_Weak_Form_Loss_Value;
+            Data_Loss_Value     += ith_Data_Loss_Value;
+            L2_Loss_Value       += ith_L2_Loss_Value;
+            Total_Loss_Value    += ith_Total_Loss_Value;
 
         # Back-propagate to compute gradients of Total_Loss with respect to
         # network parameters (only do if this if the loss requires grad)
@@ -243,16 +238,6 @@ def Testing(
     RHS_Terms: A list of the Library terms (trial function + derivative)
     that appear in the right hand side of the PDE.
 
-    Partition: A 2D array whose ith row holds the coordinates of the ith
-    point in the partition of the problem domain. We use these points as
-    quadrature points when approximating the integrals in the weak form loss.
-    We also assume each weight function was initialized with Coords = Partition.
-
-    V: The volume of any sub-rectangle induced by the partition. We
-    assume that along any dimension, the partition points are uniformly spaced,
-    meaning that every sub-rectangle induced by the partition has the same
-    volume. V is that volume.
-
     Weight_Functions: A list of the weight functions in the weak form loss.
 
     p, Lambda: the settings value for p and Lambda (in the loss function).
@@ -260,13 +245,19 @@ def Testing(
     Weights: A dictionary of floats. It should have keys for "Lp", "Coll", and 
     "Data".
 
-    Device: The device for Sol_NN and PDE_NN.
+    Device: The device for the U_i's and Xi.
 
     ----------------------------------------------------------------------------
     Returns:
 
-    a tuple of floats. The first element holds the Data_Loss. The second
-    holds the Weak_Form_Loss. The third holds Lambda times the Lp_Loss. 
+    A dictionary with the following keys:
+        "Coll Loss", "Data Loss", "L2 Loss": lists of floats whose ith entry
+        holds the corresponding loss for the ith data set. 
+
+        "Total Loss": a list of floats whose ith entry houses the total loss for
+        the ith data set.
+
+        "Lp Loss": A float housing the value of the Lp loss.
     """
 
     assert(len(U_List) == len(Weight_Functions_List));
