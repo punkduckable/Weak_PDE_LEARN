@@ -1,26 +1,22 @@
 ################################################################################
-# Save, Load Settings.
+# Load Settings.
 
-# Load settings.
-Load U From Save [bool]:                         True
-Load Xi From Save [bool]:                        True
+# What do you want to load? If anything, you must provide a load file name 
+# (which should be the name of a file in the Saves directory). Otherwise, you 
+# can ignore the "Load File Name" setting.
+Load U's From Save [bool]:                       False
+Load Xi, Library From Save [bool]:               False
 Load Optimizer From Save [bool]:                 False
-    Load File Name [str]:                        Burgers_Sine_Rational_Adam
-
-# Save settings
-Save State [bool]:                               True
-    Save File Name [str]:                        Burgers_Sine_Rational_LBFGS
+    Load File Name [str]:                        
 
 
 
 ################################################################################
-# PDE Settings.
-
-# Order of the time derivative on the PDE's left-hand side
-Time Derivative Order [int]:                     1
+# Library Settings.
 
 # Where are the library terms listed? Omit the .txt extension. This file should
-# be in the main directory.
+# be in the repository's main directory. You can ignore this if loading the 
+# Library from Save.
 Library File [str]:                              Library
 
 
@@ -28,10 +24,10 @@ Library File [str]:                              Library
 ################################################################################
 # Network Settings.
 
-# U network.
-Number of Hidden Layers [int]:                   5
-Hidden Units per Hidden Layer [int]:             50
-Activation Function [Tanh, Rational, Sin]:       Rational
+# Architecture of the U networks. We use the same architecture for each network.
+# You can ignore these settings if you are loading the U's from a save.
+Hidden Layer Widths [List of int]:               50, 50, 50, 50, 50
+Activation Function [Tanh, Rational, Sin]:       Tanh
 
 # Device settings.
 Train on CPU or GPU [GPU, CPU]:                  cpu
@@ -41,30 +37,31 @@ Train on CPU or GPU [GPU, CPU]:                  cpu
 ################################################################################
 # Loss Settings.
 
-Number of Weight Functions [int]:                200
-Axis Partition Size [int]:                       200
-
 p [float]:                                       .1
-Lambda [float]:                                  .0001
+Weights [Dict of float]:                         {"Data" : 1.0, "Coll" : 1.0, "Lp" : 0.000, "L2" : 0.000005}
+Number of Weight Functions [int]:                200
 
+# How many grid lines do you want along each axis? This defines the grid of 
+# coordinates that we use for integration.
+Axis Partition Size [int]:                       100
 
-################################################################################
-# Threshold Settings.
-
-Threshold [float]:                               .001
+# Should we mask out component of Xi that start off sufficiently small (5e-4)? 
+# Ignore this setting unless you are loading Xi and the library from file.
+Mask Small Xi Components [bool]:                 True
 
 
 
 ################################################################################
 # Optimizer Settings.
 
-Optimizer [Adam, LBFGS]:                         LBFGS
-Learning Rate [float]:                           .1
-Number of Epochs [int]:                          100
+Optimizer [Adam, LBFGS]:                         Adam
+Learning Rate [float]:                           .001
+Number of Epochs [int]:                          1000
 
 
 
 ################################################################################
-# Data Settings.
+# Data settings.
+# You can ignore this setting if you are loading the U's from a save.
 
-DataSet [str]:                                  Burgers_Sine_N0_P10000
+DataSet Names [List of str]:                     [Burgers_Sine_N75_P2000]

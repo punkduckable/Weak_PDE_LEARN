@@ -11,43 +11,38 @@ Classes_Path    = os.path.join(Code_Path, "Classes");
 sys.path.append(Readers_Path);
 sys.path.append(Classes_Path);
 
-import numpy;
-import torch;
-import time;
+import  numpy;
+import  torch;
+import  time;
+from    typing              import Dict, List, Tuple;
 
-from Settings_Reader    import Settings_Reader, Settings_Container;
-from Loss               import Data_Loss, Lp_Loss, Weak_Form_Loss;
-from Network            import Rational, Network;
-from Data_Loader        import Data_Loader;
-from Test_Train         import Testing, Training;
-from Points             import Generate_Points, Setup_Partition;
-from Weight_Function    import Weight_Function;
-from Derivative         import Derivative;
+from    Settings_Reader    import Settings_Reader;
+from    Loss               import Data_Loss, Lp_Loss, Weak_Form_Loss;
+from    Network            import Rational, Network;
+from    Data_Loader        import Data_Loader;
+from    Test_Train         import Testing, Training;
+from    Points             import Generate_Points, Setup_Partition;
+from    Weight_Function    import Weight_Function;
+from    Derivative         import Derivative;
+
+
+
+Threshold : float = 0.0005;
 
 
 
 def main():
     # Load the settings, print them.
-    Settings = Settings_Reader();
-    for (Setting, Value) in Settings.__dict__.items():
-        # Python does weird things if you want to print a list... so we have
-        # to handle this case separately.
-        if(isinstance(Value, list)):
-            # First, print the setting name.
-            print("%-25s = " % Setting, end = '');
-
-            # Next, print the contents of the list, one by one.
-            num_items : int = len(Value);
-            for i in range(num_items - 1):
-                print(str(Value[i]) + ", ", end = '');
-            print(str(Value[-1]) + ".");
-        # If we're not dealing with a list, just print the setting, value.
-        else:
-            print(("%-25s = " % Setting) + str(Value));
+    Settings : Dict = Settings_Reader();
+    for (Setting, Value) in Settings.items():
+        print("%-25s = %s" % (Setting, str(Value)));
 
     # Start a setup timer.
     Setup_Timer : float = time.perf_counter();
-    print("Setting up... ", end = '');
+    print("\nSetting up...\n");
+
+    return;
+    
 
 
     ############################################################################
@@ -310,7 +305,7 @@ def main():
     N   : int = Xi.numel();
     for k in range(N):
         Abs_Xi_k = abs(Xi[k].item());
-        if(Abs_Xi_k < Settings.Threshold):
+        if(Abs_Xi_k < Threshold):
             Pruned_Xi[k] = 0;
         else:
             Pruned_Xi[k] = Xi[k];

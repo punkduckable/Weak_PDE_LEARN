@@ -288,7 +288,6 @@ def Testing(
 
         Weak_Loss_List = Weak_Form_Loss(    U                   = U_List[i],
                                             Xi                  = Xi,
-                                            Mask        = Mask,
                                             LHS_Term            = LHS_Term,
                                             RHS_Terms           = RHS_Terms,
                                             Mask                = Mask,

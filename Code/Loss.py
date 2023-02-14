@@ -16,7 +16,7 @@ import math;
 from typing import Tuple, List;
 
 from Network            import Network, Rational;
-from Integrate          import Integrate;
+from Integrate          import Integrate_PDE;
 from Derivative         import Derivative;
 from Library_Term       import Library_Term;
 from Trial_Function     import Trial_Function;
@@ -73,7 +73,7 @@ def Weak_Form_Loss( U                   : Network,
                     LHS_Term            : Library_Term,
                     RHS_Terms           : List[Library_Term],
                     Weight_Functions    : List[Weight_Function]) -> Tuple[torch.Tensor, torch.Tensor]:
-    """ 
+    r""" 
     We assume the underlying PDE is
         D_0 F_0(U) = c_1 D_1 F_1(U) + ... + c_n D_K F_K(U).
     Since this equation is valid on the entire problem domain, Omega, we should
@@ -150,11 +150,11 @@ def Weak_Form_Loss( U                   : Network,
 
     for m in range(M):
         # First, compute the integrals for the kth weight function.
-        wm_LHS, wm_RHSs = Integrate(w           = Weight_Functions[m], 
-                                    U           = U,
-                                    LHS_Term    = LHS_Term, 
-                                    RHS_Terms   = RHS_Terms,
-                                    Mask        = Mask);
+        wm_LHS, wm_RHSs = Integrate_PDE(w           = Weight_Functions[m], 
+                                        U           = U,
+                                        LHS_Term    = LHS_Term, 
+                                        RHS_Terms   = RHS_Terms,
+                                        Mask        = Mask);
         b[m]    = wm_LHS;
         for k in range(K):
             A_Xi += Xi[k]*wm_RHSs[k];

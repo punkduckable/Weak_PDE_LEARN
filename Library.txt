@@ -2,12 +2,12 @@
 # PDEs of the following form:
 #     D^{(0)} F_0(U) = c_1 D^{(1)} F_1(U) + ... + c_K D^{(K)} F_K(U)
 # Here, U is the PDE solution (which depends on (t, x), (t, x, y), or
-# (t, x, y, z)) depending on the number of PDE terms. F_0, ... , F_K are scalar
+# (t, x, y, z), depending on the number of PDE terms). F_0, ... , F_K are scalar
 # valued functions of U (NOT its derivatives). We call these "Trial functions".
 #  D^{(0)}, ... , D^{(K)} are partial derivative operators. We call terms of the
 # form D^{(i)} F_i(U) a "Library term". We call the term D^{(0)} F_0(U) the
-# "LEft Hand Side Term" or "LHS Term" for short, and the terms D^{(i)} F_i(U),
-# for i >= 1, the "Right Hand Side Terms" or "RHS Terms" for short.
+# "left-hand side term" or "LHS Term" for short, and the terms D^{(i)} F_i(U),
+# for i >= 1, the "right-hand side Terms" or "RHS terms" for short.
 #
 # This file specifies Library terms. Since the LHS Term has a special
 # designation, we specify it separately. Each trial function must be a power
@@ -37,7 +37,7 @@
 # per line.
 
 # LHS Term
-D_t U
+D_t^2 U
 
 # RHS Terms
 1
@@ -46,13 +46,9 @@ U
 D_x U
 D_x^2 U
 D_x^3 U
+D_x^4 U
 
 U^2
 D_x U^2
 D_x^2 U^2
 D_x^3 U^2
-
-U^3
-D_x U^3
-D_x^2 U^3
-D_x^3 U^3

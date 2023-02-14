@@ -1,3 +1,7 @@
+from    typing import List, Dict;
+
+
+
 class Read_Error(Exception):
     # Raised if we can't find a Phrase in a File.
     pass;
@@ -5,7 +9,6 @@ class Read_Error(Exception):
 class End_Of_File_Error(Exception):
     # Raised if we reach the end of a file.
     pass;
-
 
 
 
@@ -89,7 +92,7 @@ def Read_Line_After(
         Comment_Char   : str = '#',
         Case_Sensitive : bool = False) -> str:
     """ 
-    This function tries to find a line of File that contains Phrase as a 
+    This function tries to find a line of File that contains Phrase as a
     substring. Note that we start searching at the current position of the file
     pointer. We do not search from the start of File.
 
@@ -178,7 +181,7 @@ def Read_Bool_Setting(File, Setting_Name : str) -> bool:
     Buffer = Read_Line_After(File, Setting_Name).strip();
 
     # Check if the setting is present. If not, the Buffer will be empty.
-    if  (len(Buffer) == 0):
+    if(len(Buffer) == 0):
         raise Read_Error("Missing Setting Value: You need to specify the \"%s\" setting" % Setting_Name);
 
     # Attempt to parse the result. Throw an error if we can't.
@@ -191,8 +194,111 @@ def Read_Bool_Setting(File, Setting_Name : str) -> bool:
 
 
 
+def Read_List_Setting(File, Setting_Name : str) -> List[str]:
+    """ 
+    Reads a setting whose value is a list. We return that list with each list 
+    item stored as a string.
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    File: The file we want to read the setting from.
+
+    Setting_Name: The name of the setting we're reading. We need this in case
+    of an error, so that we can print the appropriate error message.
+
+    ----------------------------------------------------------------------------
+    Return:
+
+    A list whose ith element holds the ith element of the setting, stored as
+    a string. 
+    """
+
+    Buffer : str = Read_Line_After(File, Setting_Name).strip();
+
+    # Check if the setting is present. If not, the Buffer will be empty.
+    if(len(Buffer) == 0):
+        raise Read_Error("Missing Setting Value: You need to specify the \"%s\" setting" % Setting_Name);
+
+    # Now... let's parse the setting. To do this, we first need to remove the
+    # '[' and ']' characters at the start and end of the string, respectively
+    # (if they are present).
+    if(Buffer[0] == '['):
+        Buffer = Buffer[1:];
+    if(Buffer[-1] == ']'):
+        Buffer = Buffer[:-1];
+
+    # Now, split the string using the ',' character. Then, manually strip each entry.
+    List : List[str] = Buffer.split(',');
+    for i in range(len(List)):
+        List[i] = List[i].strip();
+
+    # All done!
+    return List;
+
+
+
+def Read_Dict_Setting(File, Setting_Name : str) -> Dict[str, str]:
+    """ 
+    Reads a setting whose value is a dictionary. We return a dictionary with 
+    the same keys and values. 
+
+    ----------------------------------------------------------------------------
+    Arguments:
+
+    File: The file we want to read the setting from.
+
+    Setting_Name: The name of the setting we're reading. We need this in case
+    of an error, so that we can print the appropriate error message.
+
+    ----------------------------------------------------------------------------
+    Return:
+
+    A dictionary with the same keys and values as the setting dictionary. All 
+    keys and values are strings. 
+    """
+
+    Buffer : str = Read_Line_After(File, Setting_Name).strip();
+
+    # Check if the setting is present. If not, the Buffer will be empty.
+    if(len(Buffer) == 0):
+        raise Read_Error("Missing Setting Value: You need to specify the \"%s\" setting" % Setting_Name);
+
+    # Now... let's parse the setting. To do this, we first need to remove the
+    # '{' and '}' characters at the start and end of the string, respectively
+    # (if they are present).
+    if(Buffer[0] == '{'):
+        Buffer = Buffer[1:];
+    if(Buffer[-1] == '}'):
+        Buffer = Buffer[:-1];
+
+    # Now, split the string using the ',' character. Then manually parse each 
+    # key/value pair.
+    Items : List[str] = Buffer.split(',');
+    Dict = {};
+    for i in range(len(Items)):
+        # Split the key from the value
+        Temp : List[str] = Items[i].split(':');
+        Key     : str = Temp[0].strip();
+        Value   : str = Temp[1].strip();
+
+        # Remove quotations from the Key, if they are present.
+        if(Key[0] == '\"' or Key[0] == '\''):
+            Key = Key[1:];
+        if(Key[-1] == '\"' or Key[0] == '\''):
+            Key = Key[:-1];
+
+        # Set dictionary key/value pair.
+        Dict[Key]       = Value;
+
+    # All done!
+    return Dict;
+
+
+
 def Read_Setting(File, Setting_Name : str) -> str:
-    """ Reads a non-boolean setting from File.
+    """ 
+    Reads a non-boolean setting from File.
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -206,7 +312,8 @@ def Read_Setting(File, Setting_Name : str) -> str:
     Return:
 
     The value of the non-boolean setting as a string (you may need to type cast
-    the returned value) """
+    the returned value) 
+    """
 
     # Read the setting. This will yield a string.
     Buffer = Read_Line_After(File, Setting_Name).strip();
