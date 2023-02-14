@@ -151,12 +151,12 @@ def main():
         Xi : torch.Tensor = Saved_State["Xi"];
 
         # Next, load the library (LHS term and RHS Terms)
-        Settings["LHS Term"] = Build_Library_Term_From_State(Saved_State["LHS Term"]);
+        Settings["LHS Term"] = Build_Library_Term_From_State(Saved_State["LHS Term State"]);
 
         RHS_Terms       : List[Library_Term]    = [];
         Num_RHS_Terms   : int                   = len(Saved_State["RHS Term States"]);
         for i in range(Num_RHS_Terms):
-            RHS_Terms.append(Build_Library_Term_From_State(State = Saved_State["RHS Term States"][i]));
+            RHS_Terms.append(Build_Library_Term_From_State(Saved_State["RHS Term States"][i]));
         Settings["RHS Terms"] = RHS_Terms;     
 
         print("Loaded Xi, Library from file.");

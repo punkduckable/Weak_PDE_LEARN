@@ -43,13 +43,13 @@ class Library_Term():
         this object represents.
         """
 
-        Buffer : str = "";
+        Buffer : str = "(";
 
         # Get the Derivative.
         Buffer += self.Derivative.__str__();
 
         # Get the Trial Function.
-        Buffer += self.Trial_Function.__str__();
+        Buffer += self.Trial_Function.__str__() + ")";
 
         # All done! Return!
         return Buffer;
@@ -102,4 +102,4 @@ def Build_Library_Term_From_State(State : Dict) -> Library_Term:
     F : Trial_Function.Trial_Function   = Trial_Function.Build_Trial_Function_From_State(State["Trial Function"]);
 
     # Now... build the library term
-    return Library_Term(Derivative = Derivative, Trial_Function = Trial_Function);
+    return Library_Term(Derivative = D, Trial_Function = F);
