@@ -1,3 +1,6 @@
+from    typing  import Dict;
+
+
 
 class Trial_Function():
     """ 
@@ -46,3 +49,39 @@ class Trial_Function():
 
         # All done. Return!
         return Buffer;
+    
+
+    def Get_State(self) -> Dict: 
+        """
+        This function helps serialize self. It returns a dictionary that can be
+        used to create self from scratch. You can recover a copy of self by 
+        passing this dictionary to the Build_Trial_Function_From_State function.
+        
+        -----------------------------------------------------------------------
+        Returns:
+
+        A dictionary with one key: "Power". 
+        """   
+
+        return {"Power" : self.Power}; 
+
+
+
+def Build_Trial_Function_From_State(State : Dict) -> Trial_Function:
+    """
+    This function builds a new Trial Function object from a State dictionary. 
+    It then returns that object. 
+
+    ---------------------------------------------------------------------------
+    Arguments:
+
+    State: A dictionary. This should either be the dictionary returned by the 
+    Trial_Function class' Get_State method, or an unpickled copy of one. 
+
+    ---------------------------------------------------------------------------
+    Returns:
+
+    A new Trial Function object.
+    """
+
+    return Trial_Function(State["Power"]);

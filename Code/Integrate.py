@@ -110,7 +110,7 @@ def Integrate_PDE(  w               : Weight_Function,
 	Num_RHS_Terms   : int = len(RHS_Terms);
 
 	for i in range(Num_RHS_Terms):
-		if(RHS_Terms[i].Trial_Function.Power > Max_Pow and Mask[k] == False):
+		if(RHS_Terms[i].Trial_Function.Power > Max_Pow and Mask[i] == False):
 			Max_Pow = RHS_Terms[i].Trial_Function.Power;
 
 
@@ -121,7 +121,7 @@ def Integrate_PDE(  w               : Weight_Function,
 	Supported_Coords : torch.Tensor = w.Supported_Coords;
 
 	# Next, evaluate U on these coordinates. 
-	U_Coords : torch.Tensor     = U(Supported_Coords).view(-1);
+	U_Coords 	: torch.Tensor  = U(Supported_Coords).view(-1);
 	Num_Coords  : int           = U_Coords.numel();
 
 	# Next, compute powers of U up to Max_Pow on the partition. We will need
@@ -132,7 +132,7 @@ def Integrate_PDE(  w               : Weight_Function,
 	U_Coords_Powers.append(U_Coords);
 
 	for i in range(2, Max_Pow + 1):
-		U_Coords_Powers.append(torch.multiply(U_Coords,U_Coords_Powers[i - 1]));
+		U_Coords_Powers.append(torch.pow(U_Coords, i));
 
 
 	############################################################################

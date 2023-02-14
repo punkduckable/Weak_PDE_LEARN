@@ -286,7 +286,7 @@ def Testing(
                                         Inputs      = Inputs_List[i],
                                         Targets     = Targets_List[i]).item();
 
-        Weak_Loss_List = Weak_Form_Loss(    U                   = U_List[i],
+        Weak_Loss_List[i] = Weak_Form_Loss( U                   = U_List[i],
                                             Xi                  = Xi,
                                             LHS_Term            = LHS_Term,
                                             RHS_Terms           = RHS_Terms,

@@ -157,7 +157,7 @@ def Weak_Form_Loss( U                   : Network,
                                         Mask        = Mask);
         b[m]    = wm_LHS;
         for k in range(K):
-            A_Xi += Xi[k]*wm_RHSs[k];
+            A_Xi[m] += Xi[k]*wm_RHSs[k];
     
     # Compute loss! (this is (1/m)||A \xi - b ||_2^2).
     Residual : torch.Tensor = torch.subtract(b, A_Xi);
@@ -252,7 +252,7 @@ def L2_Squared_Loss(U : Network) -> torch.Tensor:
     """
 
     # Setup. 
-    L2_Loss     : torch.Tensor  = torch.zeros(1, dtype = torch.float32);
+    Loss     : torch.Tensor  = torch.zeros(1, dtype = torch.float32);
     Num_Layers  : int           = U.Num_Layers;
 
     for i in range(Num_Layers):

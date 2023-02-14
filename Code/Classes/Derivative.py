@@ -1,4 +1,5 @@
-import numpy;
+from    typing  import List, Dict;
+import  numpy;
 
 
 
@@ -95,3 +96,44 @@ class Derivative():
                 Buffer += ("D_z^%u " % self.Encoding[3]);
 
         return Buffer;
+
+
+
+    def Get_State(self) -> Dict:
+        """
+        This function helps serialize self. It returns a dictionary that can be
+        used to create self from scratch. You can recover a copy of self by 
+        passing this dictionary to the Build_Derivative_From_State function.
+        
+        -----------------------------------------------------------------------
+        Returns:
+
+        A dictionary with one key: "Encoding".
+        """
+
+        # We can start things off with the Powers attribute.
+        State : Dict = {"Encoding"  : self.Encoding};
+
+        return State;
+    
+
+
+
+def Build_Derivative_From_State(State : Dict) -> Derivative:
+    """
+    This function builds a new Derivative object from a State dictionary. It 
+    then returns that object. 
+
+    ---------------------------------------------------------------------------
+    Arguments:
+
+    State: A dictionary. This should either be the dictionary returned by the 
+    Derivative class' Get_State method, or an unpickled copy of one. 
+
+    ---------------------------------------------------------------------------
+    Returns:
+
+    A new derivative object.
+    """
+
+    return Derivative(State["Encoding"]);

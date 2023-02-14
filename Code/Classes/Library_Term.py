@@ -1,5 +1,8 @@
-import Derivative;
-import Trial_Function;
+from    typing          import Dict, List;
+
+import  Derivative;
+import  Trial_Function;
+
 
 
 
@@ -50,3 +53,53 @@ class Library_Term():
 
         # All done! Return!
         return Buffer;
+
+
+
+    def Get_State(self) -> Dict:
+        """
+        This function helps serialize self. It returns a dictionary that can be
+        used to create self from scratch. You can recover a copy of self by 
+        passing this dictionary to the Build_Library_Term_From_State function.
+        
+        -----------------------------------------------------------------------
+        Returns:
+
+        A dictionary with two keys, "Derivative Encodings" and "Powers". The 
+        former is a list whose ith entry holds the Encoding array for the ith 
+        derivative of the library term. The latter is simply self's power 
+        attribute.
+        """
+
+        # We can start things off with the Powers attribute.
+        State : Dict = {"Trial Function"    : self.Trial_Function.Get_State(),
+                        "Derivative"        : self.Derivative.Get_State()};
+
+        return State;
+
+
+
+
+def Build_Library_Term_From_State(State : Dict) -> Library_Term:
+    """
+    This function builds a new Library Term object from a State dictionary. It then
+    returns that object. 
+
+    ---------------------------------------------------------------------------
+    Arguments:
+
+    State: A dictionary. This should either be the dictionary returned by the 
+    Library Term class' Get_State method, or an unpickled copy of one. 
+
+    ---------------------------------------------------------------------------
+    Returns:
+
+    A new Library Term object. 
+    """
+
+    # Extract the derivative, trial function.
+    D : Derivative.Derivative           = Derivative.Build_Derivative_From_State(State["Derivative"]);
+    F : Trial_Function.Trial_Function   = Trial_Function.Build_Trial_Function_From_State(State["Trial Function"]);
+
+    # Now... build the library term
+    return Library_Term(Derivative = Derivative, Trial_Function = Trial_Function);

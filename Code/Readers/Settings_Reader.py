@@ -2,7 +2,6 @@ import  torch;
 from    typing          import Dict, List;
 
 from    File_Reader     import Read_Error, Read_Line_After, Read_Bool_Setting, Read_Setting, Read_List_Setting, Read_Dict_Setting;
-from    Library_Reader  import Read_Library;
 
 
 def Settings_Reader() -> Dict:
@@ -29,12 +28,12 @@ def Settings_Reader() -> Dict:
     # Save, Load Settings
 
     # Load Sol, Xi, or Optimizer from File?
-    Settings["Load U"]              = Read_Bool_Setting(File, "Load U's From Save [bool]:");
+    Settings["Load U's"]            = Read_Bool_Setting(File, "Load U's From Save [bool]:");
     Settings["Load Xi, Library"]    = Read_Bool_Setting(File, "Load Xi, Library from Save [bool]:");
     Settings["Load Optimizer"]      = Read_Bool_Setting(File, "Load Optimizer from Save [bool]:");
 
     # If so, get the load file name.
-    if( Settings["Load U"]              == True or
+    if( Settings["Load U's"]              == True or
         Settings["Load Xi, Library"]    == True or
         Settings["Load Optimizer"]      == True):
 
@@ -57,7 +56,7 @@ def Settings_Reader() -> Dict:
     # Network settings.
 
     # Read in network architecture if we are not loading U from save.
-    if(Settings["Load U"] == False):
+    if(Settings["Load U's"] == False):
         # Width of the hidden layers
         Buffer : List[str] = Read_List_Setting(File, "Hidden Layer Widths [List of int]:");
         for i in range(len(Buffer)):
@@ -143,7 +142,7 @@ def Settings_Reader() -> Dict:
 
     # Read in the list of datasets, assuming we are not loading U from file. 
     # Otherwise, the data set names should have been saved in the save sate.
-    if(Settings["Load U"] == False):
+    if(Settings["Load U's"] == False):
         Settings["DataSet Names"] = Read_List_Setting(File, "DataSet Names [List of str]:");
 
     # All done! Return the settings!
