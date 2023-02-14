@@ -1,4 +1,4 @@
-# Nonsense to add Code dirctory to the Python search path.
+# Nonsense to add Code directory to the Python search path.
 import os
 import sys
 
@@ -11,7 +11,7 @@ sys.path.append(Code_path);
 import  numpy;
 from    typing          import List, Tuple;
 
-from    File_Reader     import End_Of_File_Error, Read_Line_After;
+from    File_Reader     import End_Of_File_Error, Read_Line_After, Read_Error;
 from    Derivative      import Derivative;
 from    Trial_Function  import Trial_Function;
 from    Library_Term    import Library_Term;

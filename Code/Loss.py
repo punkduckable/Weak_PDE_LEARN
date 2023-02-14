@@ -55,6 +55,7 @@ def Data_Loss(
     A scalar tensor whose sole entry holds the mean square data loss. 
     """
 
+
     # Evaluate U at the data points.
     U_Predict = U(Inputs).view(-1);
 
@@ -68,11 +69,10 @@ def Data_Loss(
 
 def Weak_Form_Loss( U                   : Network,
                     Xi                  : torch.Tensor,
+                    Mask                : torch.Tensor,
                     LHS_Term            : Library_Term,
                     RHS_Terms           : List[Library_Term],
-                    Partition           : torch.Tensor,
-                    V                   : float,
-                    Weight_Functions    : List[Weight_Function]) -> torch.Tensor:
+                    Weight_Functions    : List[Weight_Function]) -> Tuple[torch.Tensor, torch.Tensor]:
     """ 
     We assume the underlying PDE is
         DF(U) = c_1 D_1 F_1(U) + ... + c_n D_n F_n(U).
@@ -106,21 +106,17 @@ def Weak_Form_Loss( U                   : Network,
 
     U : The neural network which approximates the system response function.
 
-    Xi : The 1D tensor of coefficients used to calculate the weak form loss (see
-    above). If there are n RHS Terms, then Xi should have n elements.
+    Xi : The 1D tensor of coefficients used to calculate the weak form loss 
+    (see above). If there are n RHS Terms, then Xi should have n elements.
+
+    Mask: A boolean tensor whose shape matches that of Xi. When adding the kth 
+    RHS term to the Library_Xi product, we check if Mask[k] == False. If so, 
+    We add 0*Xi[k]. Otherwise, we compute the kth library term as usual.
 
     LHS_Term : The Left Hand Side library term. This is DF(U) in the PDE.
 
     RHS_Terms : The Right Hand Side library terms in the PDE - These are
     D_1 F_1(U), ... , D_n F_n(U) in the PDE.
-
-    Partition : The quadrature points used to approximate the integral.
-    This should be the same set of coordinates we used to initialize the weight
-    functions. The points in Partition should represent a partition of
-    Omega. This partition should be uniform in the sense that along each
-    axis, partition points are uniformly spaced.
-
-    V : The volume of any sub-rectangle in the partition of Omega.
 
     Weight_Functions : A list containing the weight functions we want to use
     to compute the Weak Form Loss.
@@ -128,7 +124,10 @@ def Weak_Form_Loss( U                   : Network,
     ----------------------------------------------------------------------------
     Returns:
 
-    A single element tensor whose lone element holds the weak form loss. 
+    A two element tuple. The first element houses a single-element tensor whose 
+    lone element holds the weak form loss. The second holds a 1D tensor whose 
+    ith entry holds the difference between the ith component of b and the 
+    ith component of A*xi. 
     """
 
 
@@ -161,7 +160,6 @@ def Weak_Form_Loss( U                   : Network,
         U_Partition_Powers.append(torch.pow(U_Partition, i));
 
 
-
     ############################################################################
     # Construct the loss.
     # The loss takes the form (1/m)||A \xi - b||_2^2, where b \in R^M (M = Number of
@@ -188,6 +186,11 @@ def Weak_Form_Loss( U                   : Network,
     A_Xi : torch.Tensor = torch.zeros(m, dtype = torch.float32);
 
     for j in range(n):
+        # If the jth term is masked, skip it.
+        if(Mask[j] == True):
+            A_Xi += 0.0*Xi[j];
+            continue;
+
         D_j : Derivative        = RHS_Terms[j].Derivative;
         F_j : Trial_Function    = RHS_Terms[j].Trial_Function;
         A_j : torch.Tensor      = torch.empty(m, dtype = torch.float32);
@@ -204,24 +207,30 @@ def Weak_Form_Loss( U                   : Network,
         A_Xi += torch.multiply(A_j, Xi[j]);
 
     # Compute loss! (this is (1/m)||A \xi - b ||_2^2).
-    return (torch.sum((b - A_Xi)**2))/float(m);
+    Residual : torch.Tensor = torch.subtract(b, A_Xi);
+    return ((torch.sum(Residual**2))/float(m), Residual);
 
 
 
-def Lp_Loss(Xi  : torch.Tensor,
-            p   : float):
+def Lp_Loss(Xi      : torch.Tensor, 
+            Mask    : torch.Tensor,
+            p       : float) -> torch.Tensor:
     """ 
-    This function approximates the L0 norm of Xi using the following
-    quantity:
+    This function approximates the L0 norm of Xi using the following quantity:
         w_1*|Xi[1]|^2 + w_2*|Xi[2]|^2 + ... + w_N*|Xi[N]|^2
     Where, for each k,
-        w_k = 1/max{delta, |Xi[k]|^{p - 2}}.
+        w_k =   1/max{delta, |Xi[k]|^{p - 2}}       if Mask[k] == False
+                0                                   if Mask[k] == True
     (where delta is some small number that ensures we're not dividing by zero!)
 
     ----------------------------------------------------------------------------
     Arguments:
 
     Xi: The Xi vector in our setup. This should be a one-dimensional tensor.
+
+    Mask: A boolean tensor whose shape matches that of Xi. When adding the kth 
+    RHS term to the Library_Xi product, we check if Mask[k] == False. If so, 
+    We add 0*Xi[k]. Otherwise, we compute the kth library term as usual.
 
     p: The "p" in in the expression above
 
@@ -236,7 +245,7 @@ def Lp_Loss(Xi  : torch.Tensor,
 
     # First, square the components of Xi. Also, make a double precision copy of
     # Xi that is detached from Xi's graph.
-    delta : float = .000001;
+    delta : float = .0000001;
     Xi_2          = torch.mul(Xi, Xi);
     Xi_Detach     = torch.detach(Xi);
 
@@ -244,6 +253,10 @@ def Lp_Loss(Xi  : torch.Tensor,
     W               = torch.empty_like(Xi_Detach);
     N : int         = W.numel();
     for k in range(N):
+        if(Mask[k] == True):
+            W[k] = 0.0;
+            continue;
+
         # First, obtain the absolute value of the kth component of Xi, as a float.
         Abs_Xi_k    : float = abs(Xi[k].item());
 
@@ -284,6 +297,7 @@ def L2_Squared_Loss(U : Network) -> torch.Tensor:
     A single element tensor whose lone element holds the square of the L2 norm 
     of U's parameter vector.
     """
+
 
     # Setup. 
     L2_Loss     : torch.Tensor  = torch.zeros(1, dtype = torch.float32);

@@ -13,12 +13,14 @@ class Trial_Function():
 
     def __init__(   self,
                     Power : int) -> None:
-        """ Initializer:
+        """ 
+        Initializer:
 
         ------------------------------------------------------------------------
         Arguments:
 
-        Power: See class docstring. """
+        Power: See class docstring. 
+        """
 
         assert(Power >= 0);
         self.Power = Power;

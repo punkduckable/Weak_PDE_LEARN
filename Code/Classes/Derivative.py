@@ -26,12 +26,14 @@ class Derivative():
 
     def __init__(   self,
                     Encoding : numpy.ndarray) -> None:
-        """ Initializer.
+        """ 
+        Initializer.
 
         ------------------------------------------------------------------------
         Arguments:
 
-        Encoding: See class docstring. """
+        Encoding: See class docstring. 
+        """
 
         # First, cast to integer array. This also returns a copy of Encoding.
         Encoding : numpy.ndarray = Encoding.astype(dtype = numpy.int32);

@@ -11,55 +11,56 @@ sys.path.append(Classes_Path);
 
 import  numpy       as np;
 import  torch;
-from    typing      import List, Tuple;
+from    typing      import List, Tuple, Dict;
 
 from Network            import Network;
-from Loss               import Data_Loss, Weak_Form_Loss, Lp_Loss;
+from Loss               import Data_Loss, Weak_Form_Loss, Lp_Loss, L2_Squared_Loss;
 from Library_Term       import Library_Term;
 from Weight_Function    import Weight_Function;
 
 
 
 def Training(
-        U                                   : Network,
+        U_List                              : List[Network],
         Xi                                  : torch.Tensor,
-        Inputs                              : torch.Tensor,
-        Targets                             : torch.Tensor,
+        Mask                                : torch.Tensor, 
+        Inputs_List                         : List[torch.Tensor],
+        Targets_List                        : List[torch.Tensor],
         LHS_Term                            : Library_Term,
         RHS_Terms                           : List[Library_Term],
-        Partition                           : torch.Tensor,
-        V                                   : float,
-        Weight_Functions                    : List[Weight_Function],
+        Weight_Functions_List               : List[List[Weight_Function]],
         p                                   : float,
-        Lambda                              : float,
+        Weights                             : Dict[str, float],
         Optimizer                           : torch.optim.Optimizer,
-        Device                              : torch.device = torch.device('cpu')) -> None:
+        Device                              : torch.device = torch.device('cpu')) -> Dict:
     """ 
-    This function runs one epoch of training. We enforce the learned PDE
-    (library-Xi product) at the Coll_Points. We also make U match the
-    Targets at the Inputs.
+    This function runs one epoch of training. For each network, we evaluate 
+    the weak form loss and try to make the ith system response function match 
+    the ith dataset. We also evaluate the Lp loss of Xi. Once we've evaluated 
+    each loss, use back-propagation to update each network's parameters (along 
+    with xi).
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
-    U: The network that approximates the PDE solution.
+    U_List: A list of Networks whose ith element holds the network that 
+    approximates the ith system response function.
 
     Xi: The vector that stores the coefficients of the library terms.
 
-    Coll_Points: the collocation points at which we enforce the learned
-    PDE. If U accepts d spatial coordinates, then this should be a d+1 column
-    tensor whose ith row holds the t, x_1,... x_d coordinates of the ith
-    Collocation point.
+    Mask: A boolean tensor whose shape matches that of Xi. We use this to 
+    compute the Collocation loss (see that doc string).
 
-    Inputs: A tensor holding the coordinates of the points at which we
-    compare the approximate solution to the true one. If U accepts d spatial
-    coordinates, then this should be a d+1 column tensor whose ith row holds the
-    t, x_1,... x_d coordinates of the ith Data-point.
+    Inputs_List: A list of tensors whose ith element holds the coordinates of 
+    the points at which we evaluate the U_List[i]. If the ith system response 
+    function is a function of d spatial coordinates, then the ith list item 
+    should be a d+1 column tensor whose kth row holds the t, x_1,... x_d 
+    coordinates of the kth Data-point for the ith system response function.
 
-    Targets: A tensor holding the value of the true solution at the data
-    points. If Inputs has N rows, then this should be an N element tensor
-    of floats whose ith element holds the value of the true solution at the ith
-    data point.
+    Targets_List: A list of Tensors whose ith entry holds the value of the ith 
+    system response function at Inputs_List[i]. If Inputs_List[i] has N rows, 
+    then this should be an N element tensor of floats whose kth element holds 
+    the value of the ith true solution at the kth row of Inputs_List[k].
 
     LHS_Term: The Library Term (trial function + derivative) that appears on
     the left hand side of the PDE. This is generally a time derivative of U.
@@ -67,43 +68,61 @@ def Training(
     RHS_Terms: A list of the Library terms (trial function + derivative)
     that appear in the right hand side of the PDE.
 
-    Partition: A 2D array whose ith row holds the coordinates of the ith
-    point in the partition of the problem domain. We use these points as
-    quadrature points when approximating the integrals in the weak form loss.
-    We also assume each weight function was initialized with Coords = Partition.
-
-    V: The volume of any sub-rectangle induced by the partition. We
-    assume that along any dimension, the partition points are uniformly spaced,
-    meaning that every sub-rectangle induced by the partition has the same
-    volume. V is that volume.
-
-    Weight_Functions: A list of the weight functions in the weak form loss.
-
-    Index_to_Derivatives: A mapping which sends sub-index values to spatial
-    partial derivatives. This is needed to build the library in Coll_Loss.
-    If U is a function of 1 spatial variable, this should be the function
-    Index_to_x_Derivatives. If U is a function of two spatial variables, this
-    should be an instance of Index_to_xy_Derivatives.
+    Weight_Functions_List: A list of lists. The ith list item holds the list 
+    of weight functions that we use to enforce the weak form loss for the 
+    ith system response function. 
 
     Col_Number_to_Multi_Index: A mapping which sends column numbers to
     Multi-Indices. Coll_Loss needs this function. This should be an instance of
     the Col_Number_to_Multi_Index_Class class.
 
-    p, Lambda: the settings value for p and Lambda (in the loss function).
+    p: the settings value for p in "Lp" loss function.
 
-    optimizer: the optimizer we use to train U and Xi. It should have
-    been initialized with both network's parameters.
+    Weights: A dictionary of floats. It should have keys for "Lp", "Weak", and 
+    "Data".
+
+    optimizer: the optimizer we use to train U and Xi. It should have been 
+    initialized with both network's parameters.
 
     Device: The device for U and Xi.
 
     ----------------------------------------------------------------------------
     Returns:
 
-    Nothing! 
+    A dictionary with the following keys:
+        "Weak Form Loss", "Data Loss", "L2 Loss": lists of floats whose ith 
+        entry holds the corresponding loss for the ith data set / system 
+        response function.
+
+        "Total Loss": a list of floats whose ith entry houses the total loss 
+        for the ith data set.
+
+        "Lp Loss": A float housing the value of the Lp loss.
     """
 
-    # Put U in training mode.
-    U.train();
+    assert(len(U_List) == len(Weight_Functions_List));
+    assert(len(U_List) == len(Inputs_List));
+    assert(len(U_List) == len(Targets_List));
+
+    Num_DataSets : int = len(U_List);
+
+    # Put each U in training mode.
+    for i in range(Num_DataSets):
+        U_List[i].train();
+
+    # Initialize variables to track the residual, losses. We need to do this
+    # because we find these variables in the Closure function (which has its own
+    # scope. Thus, any variables created in Closure are inaccessible from
+    # outside Closure).
+    Residual_List       : List[float] = [];
+    Weak_Loss_List      : List[float] = [0]*Num_DataSets;
+    Data_Loss_List      : List[float] = [0]*Num_DataSets;
+    L2_Loss_List        : List[float] = [0]*Num_DataSets;
+    Lp_Loss_Buffer      = 0.0;
+    Total_Loss_List     : List[float] = [0]*Num_DataSets;
+
+    for i in range(Num_DataSets):
+        Residual_List.append(torch.empty(len(Weight_Functions_List[i]), dtype = torch.float32));
 
     # Define closure function (needed for LBFGS)
     def Closure():
@@ -111,80 +130,109 @@ def Training(
         if (torch.is_grad_enabled()):
             Optimizer.zero_grad();
 
-        # Evaluate the Loss
-        Loss = (Weak_Form_Loss( U                   = U,
-                                Xi                  = Xi,
-                                LHS_Term            = LHS_Term,
-                                RHS_Terms           = RHS_Terms,
-                                Partition           = Partition,
-                                V                   = V,
-                                Weight_Functions    = Weight_Functions)
+        # Set up buffers to hold the losses
+        Weak_Loss_Value     = torch.zeros(1, dtype = torch.float32);
+        Data_Loss_Value     = torch.zeros(1, dtype = torch.float32);
+        L2_Loss_Value       = torch.zeros(1, dtype = torch.float32);
+        Total_Loss_Value    = torch.zeros(1, dtype = torch.float32);
 
-                +
+        # First, calculate the Lp loss, since it is not specific to each data set.
+        Lp_Loss_Value = Lp_Loss(    Xi      = Xi,
+                                    Mask    = Mask,
+                                    p       = p);
+        Lp_Loss_Buffer = Lp_Loss_Value.detach().item();
 
-                Data_Loss(
-                    U                   = U,
-                    Inputs              = Inputs,
-                    Targets             = Targets)
+        # Now calculate the losses for each data set.
+        for i in range(Num_DataSets):
+            # Get the collocation, data, and L2 loss for the ith data set.
+            ith_Weak_Form_Loss_Value, ith_Residual = Weak_Form_Loss(
+                                            U                   = U_List[i],
+                                            Xi                  = Xi,
+                                            Mask                = Mask,
+                                            LHS_Term            = LHS_Term,
+                                            RHS_Terms           = RHS_Terms,
+                                            Weight_Functions    = Weight_Functions_List[i]);
 
-                +
+            ith_Data_Loss_Value = Data_Loss(U                   = U_List[i],
+                                            Inputs              = Inputs_List[i],
+                                            Targets             = Targets_List[i]);
 
-                Lambda*Lp_Loss( Xi      = Xi,
-                                p       = p));
+            ith_L2_Loss_Value = L2_Squared_Loss(U = U_List[i]);
 
-        # Back-propagate to compute gradients of Loss with respect to network
-        # parameters (only do if this if the loss requires grad)
-        if (Loss.requires_grad == True):
-            Loss.backward();
+            ith_Total_Loss_Value = (Weights["Data"]*ith_Data_Loss_Value + 
+                                    Weights["Weak"]*ith_Weak_Form_Loss_Value + 
+                                    Weights["Lp"]*Lp_Loss_Value + 
+                                    Weights["L2"]*ith_L2_Loss_Value);
 
-        return Loss;
+            # Store those losses in the buffers (for the returned dict)
+            Residual_List[i][:] = ith_Residual.detach();
+            Weak_Loss_List[i]   = ith_Weak_Form_Loss_Value.detach().item();
+            Data_Loss_List[i]   = ith_Data_Loss_Value.detach().item();
+            L2_Loss_List[i]     = ith_L2_Loss_Value.detach().item();
+            Total_Loss_List[i]  = ith_Total_Loss_Value.detach().item();
+
+            # Finally, accumulate the losses.
+            Weak_Loss_Value             += ith_Weak_Form_Loss_Value;
+            Data_Loss_Value             += ith_Data_Loss_Value;
+            L2_Loss_Value               += ith_L2_Loss_Value;
+            Total_Loss_Value            += ith_Total_Loss_Value;
+
+        # Back-propagate to compute gradients of Total_Loss with respect to
+        # network parameters (only do if this if the loss requires grad)
+        if (Total_Loss_Value.requires_grad == True):
+            Total_Loss_Value.backward();
+
+        return Total_Loss_Value;
 
     # update network parameters.
     Optimizer.step(Closure);
 
+    # Return the residual tensor.
+    return {"Residuals"     : Residual_List,
+            "Weak Losses"   : Weak_Loss_List,
+            "Data Losses"   : Data_Loss_List,
+            "Lp Loss"       : Lp_Loss_Buffer,
+            "L2 Losses"     : L2_Loss_List,
+            "Total Losses"  : Total_Loss_List};
+
 
 
 def Testing(
-        U                                   : Network,
+        U_List                              : List[Network],
         Xi                                  : torch.Tensor,
-        Inputs                              : torch.Tensor,
-        Targets                             : torch.Tensor,
+        Mask                                : torch.Tensor,
+        Inputs_List                         : List[torch.Tensor],
+        Targets_List                        : List[torch.Tensor],
         LHS_Term                            : Library_Term,
         RHS_Terms                           : List[Library_Term],
-        Partition                           : torch.Tensor,
-        V                                   : float,
-        Weight_Functions                    : List[Weight_Function],
+        Weight_Functions_List               : List[List[Weight_Function]],
         p                                   : float,
-        Lambda                              : float,
+        Weights                             : Dict[str, float],
         Device                              : torch.device = torch.device('cpu')) -> Tuple[float, float]:
     """ 
     This function evaluates the losses.
 
-    Note: You CAN NOT run this function with no_grad set True. Why? Because we
-    need to evaluate derivatives of U with respect to its inputs to evaluate
-    Coll_Loss! Thus, we need torch to build a computational graph.
-
     ----------------------------------------------------------------------------
     Arguments:
 
-    U: The network that approximates the PDE solution.
-
+    U_List: A list of Networks whose ith element holds the network that 
+    approximates the ith PDE solution.
+    
     Xi: The vector that stores the coefficients of the library terms.
 
-    Coll_Points: the collocation points at which we enforce the learned
-    PDE. If U accepts d spatial coordinates, then this should be a d+1 column
-    tensor whose ith row holds the t, x_1,... x_d coordinates of the ith
-    Collocation point.
+    Mask: A boolean tensor whose shape matches that of Xi. We use this to 
+    compute the Weak Form loss (see that doc string).
 
-    Inputs: A tensor holding the coordinates of the points at which we
-    compare the approximate solution to the true one. If u accepts d spatial
-    coordinates, then this should be a d+1 column tensor whose ith row holds the
-    t, x_1,... x_d coordinates of the ith Data-point.
+    Inputs_List: A list of tensors whose ith element holds the coordinates of 
+    the points at which we compare U_List[i] to the ith true solution. If each 
+    U_List[i] accepts d spatial coordinates, then this should be a d+1 column 
+    tensor whose kth row holds the t, x_1,... x_d coordinates of the kth 
+    Data-point for U_List[i].
 
-    Targets: A tensor holding the value of the true solution at the data
-    points. If Targets has N rows, then this should be an N element tensor
-    of floats whose ith element holds the value of the true solution at the ith
-    data point.
+    Targets_List: A list of Tensors whose ith entry holds the value of the ith 
+    true solution at Inputs_List[i]. If Inputs_List[i] has N rows, then this 
+    should be an N element tensor of floats whose kth element holds the value 
+    of the ith true solution at the kth row of Inputs_List[k].
 
     Time_Derivative_Order: We try to solve a PDE of the form (d^n U/dt^n) =
     N(U, D_{x}U, ...). This is the 'n' on the left-hand side of that PDE.
@@ -208,6 +256,9 @@ def Testing(
     Weight_Functions: A list of the weight functions in the weak form loss.
 
     p, Lambda: the settings value for p and Lambda (in the loss function).
+    
+    Weights: A dictionary of floats. It should have keys for "Lp", "Coll", and 
+    "Data".
 
     Device: The device for Sol_NN and PDE_NN.
 
@@ -218,27 +269,50 @@ def Testing(
     holds the Weak_Form_Loss. The third holds Lambda times the Lp_Loss. 
     """
 
-    # Put U in evaluation mode
-    U.eval();
+    assert(len(U_List) == len(Weight_Functions_List));
+    assert(len(U_List) == len(Inputs_List));
+    assert(len(U_List) == len(Targets_List));
+    
+    Num_DataSets : int = len(U_List);
 
-    # Get the losses
-    Data_Loss_Value : float  = Data_Loss(
-                                U           = U,
-                                Inputs      = Inputs,
-                                Targets     = Targets).item();
+    # Put each U in evaluation mode
+    for i in range(Num_DataSets):
+        U_List[i].eval();
+    
+    # First, evaluate the Lp loss, since this does not depend on the data set.
+    Lp_Loss_Value : float = Lp_Loss(    Xi    = Xi,
+                                        Mask  = Mask,
+                                        p     = p).item();
 
-    Weak_Form_Loss_Value : float = Weak_Form_Loss(
-                                        U                   = U,
-                                        Xi                  = Xi,
-                                        LHS_Term            = LHS_Term,
-                                        RHS_Terms           = RHS_Terms,
-                                        Partition           = Partition,
-                                        V                   = V,
-                                        Weight_Functions    = Weight_Functions).item()
+    # Get the losses for each data set.
+    Data_Loss_List  : List[float] = [0]*Num_DataSets;
+    Weak_Loss_List  : List[float] = [0]*Num_DataSets;
+    L2_Loss_List    : List[float] = [0]*Num_DataSets;
+    Total_Loss_List : List[float] = [0]*Num_DataSets;
 
-    Lambda_Lp_Loss_Value : float = Lambda*Lp_Loss(
-                                            Xi    = Xi,
-                                            p     = p).item();
+    for i in range(Num_DataSets):
+        Data_Loss_List[i] = Data_Loss(  U           = U_List[i],
+                                        Inputs      = Inputs_List[i],
+                                        Targets     = Targets_List[i]).item();
+
+        Weak_Loss_List = Weak_Form_Loss(    U                   = U_List[i],
+                                            Xi                  = Xi,
+                                            Mask        = Mask,
+                                            LHS_Term            = LHS_Term,
+                                            RHS_Terms           = RHS_Terms,
+                                            Mask                = Mask,
+                                            Weight_Functions    = Weight_Functions_List[i])[0].item();
+
+        L2_Loss_List[i] = L2_Squared_Loss(U = U_List[i]).item();
+
+        Total_Loss_List[i] =          ( Weights["Data"]*Data_Loss_List[i] + 
+                                        Weights["Weak"]*Weak_Loss_List[i] + 
+                                        Weights["Lp"]*Lp_Loss_Value + 
+                                        Weights["L2"]*L2_Loss_List[i]);
 
     # Return the losses.
-    return (Data_Loss_Value, Weak_Form_Loss_Value, Lambda_Lp_Loss_Value);
+    return {"Data Losses"   : Data_Loss_List,
+            "Weak Losses"   : Weak_Loss_List,
+            "Lp Loss"       : Lp_Loss_Value,
+            "L2 Losses"     : L2_Loss_List,
+            "Total Losses"  : Total_Loss_List};

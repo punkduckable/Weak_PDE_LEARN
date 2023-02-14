@@ -61,8 +61,13 @@ class Weight_Function(torch.nn.Module):
     Get_Derivative).
 
     Supported_Coords : When we initialize a weight function object, we pass a
-    set of coordinates. Supported_Coords is the set of coordinates in that set that
-    are also in B_r(X_0).
+    set of coordinates. We partition the problem domain using a set of grid 
+    parallel to each axis. The coordinates we pass is the resulting set of 
+    grid-points that this partition engenders. Supported_Coords is the set of 
+    coordinates in that set that are also in B_r(X_0).
+
+    V : The volume of any sub-rectangle in the the partition of the problem 
+    domain.
 
     Supported_Indices : When we initialize a weight function object, we pass a
     set of coordinates. Supported_Indices holds the indices, within the original
@@ -78,7 +83,8 @@ class Weight_Function(torch.nn.Module):
                     X_0     : torch.Tensor,
                     r       : float,
                     Powers  : torch.Tensor,
-                    Coords  : torch.Tensor) -> None:
+                    Coords  : torch.Tensor, 
+                    V       : float) -> None:
         """ 
         Class initializer.
 
@@ -99,6 +105,9 @@ class Weight_Function(torch.nn.Module):
         assume this is a B by n dimensional array whose ith row holds the ith
         coordinate. Here, B is the number of coordinates and n is the number of
         components in each coordinate. 
+
+        V : The volume of any sub-rectangle in the the partition of the problem 
+        domain.
         """
 
         # First, call the module initializer.
@@ -124,11 +133,12 @@ class Weight_Function(torch.nn.Module):
         self.Input_Dim      : int           = X_0.numel();
         self.r              : float         = r;
         self.Powers         : torch.Tensor  = Powers.to(dtype = torch.int32);
+        self.V              : float         = V;
 
         # Get Num_Coords.
         self.Num_Coords     : int           = Coords.shape[0];
 
-        # Intialize this object's derivatives array.
+        # Initialize this object's derivatives array.
         self.Derivatives    : dict = {};
 
 
@@ -136,14 +146,14 @@ class Weight_Function(torch.nn.Module):
         # Now, determine which coordinates are in B_r(X_0).
 
         # First, calculate || X - X_0 ||_{infinity}.
-        XmX0                    : torch.Tensor  = torch.subtract(Coords, X_0);
-        Max_XmX0                : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
+        XmX0                        : torch.Tensor  = torch.subtract(Coords, X_0);
+        Max_XmX0                    : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
 
         # Now, determine which coordinates are in B_r(X_0).
-        self.Supported_Indices    : torch.Tensor  = torch.less(Max_XmX0, self.r);
+        self.Supported_Indices      : torch.Tensor  = torch.less(Max_XmX0, self.r);
 
         # Record the coordinates that are.
-        self.Supported_Coords     : torch.Tensor  = Coords[self.Supported_Indices, :];
+        self.Supported_Coords       : torch.Tensor  = Coords[self.Supported_Indices, :];
 
 
 
@@ -298,8 +308,9 @@ class Weight_Function(torch.nn.Module):
 
     def Add_Derivative(     self,
                             D       : Derivative) -> None:
-        """ Let w denote this weight function object. This method evaluates
-        D(w) at w.Supported_Coords, and then stores the result in w.Derivatives.
+        """ 
+        Let w denote this weight function object. This method evaluates D(w) at 
+        w.Supported_Coords, and then stores the result in w.Derivatives. 
         Critically, we only perform these calculations if w.Derivatives does not
         contain an entry corresponding to D.
 
@@ -315,7 +326,8 @@ class Weight_Function(torch.nn.Module):
         ------------------------------------------------------------------------
         Returns:
 
-        Nothing! """
+        Nothing! 
+        """
 
         # First, check if we've already evaluated D(w).
         if(tuple(D.Encoding) in self.Derivatives):

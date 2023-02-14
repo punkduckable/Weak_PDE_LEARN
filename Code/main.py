@@ -159,7 +159,7 @@ def main():
     ############################################################################
     # Set up U and Xi.
 
-    U = Neural_Network(
+    U = Network(
             Num_Hidden_Layers   = Settings.Num_Hidden_Layers,
             Neurons_Per_Layer   = Settings.Units_Per_Layer,
             Input_Dim           = Settings.Num_Dimensions,
