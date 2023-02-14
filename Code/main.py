@@ -126,7 +126,7 @@ def main():
                                 Num_Points = Settings.Num_Weight_Functions,
                                 Device     = Settings.Device);
 
-    # Set Powers (one  more than the highest order derivative for each variable)
+    # Set Powers (one more than the highest order derivative for each variable)
     Powers_np   : numpy.ndarray = numpy.add(Max_Derivatives, 1);
     Powers      : torch.Tensor  = torch.from_numpy(Powers_np);
 
@@ -136,8 +136,8 @@ def main():
         w_i = Weight_Function(
                     X_0     = Centers[i],
                     r       = Radius,
-                    Powers  = Powers,
-                    Coords  = Partition);
+                    Coords  = Partition,
+                    V       = V);
 
         Weight_Functions.append(w_i);
 

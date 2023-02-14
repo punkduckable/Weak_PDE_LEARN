@@ -9,19 +9,34 @@ Classes_Path    = os.path.join(Code_Path, "Classes");
 # Add the Classes directory to the python path.
 sys.path.append(Classes_Path);
 
-import torch;
+import  torch;
+from    typing          import List, Tuple;
 
+from Network            import Network;
+from Library_Term       import Library_Term;
+from Trial_Function     import Trial_Function;
 from Weight_Function    import Weight_Function;
 from Derivative         import Derivative;
 
 
 
-def Integrate(w             : Weight_Function,
-              D             : Derivative,
-              FU_Partition  : torch.Tensor,
-              V             : float) -> torch.Tensor:
+def Integrate_PDE(  w               : Weight_Function,
+                    U               : Network,
+                    LHS_Term        : Library_Term, 
+                    RHS_Terms       : List[Library_Term],
+                    Mask            : torch.Tensor) -> Tuple(torch.Tensor, List[torch.Tensor]):
     """ 
-    This function approximates the integral
+    We assume that the system response function, u, satisfies a PDE of the 
+    form 
+            f_0(u) = \sum_{k = 1}^{K} \xi_k f_k(u)
+    We refer to f_0 as the "LHS Term" and {f_1, ... , f_K} as the "RHS Terms".
+    Since U approximates u, we should have 
+            f_0(U) \approx \sum_{i = 1}^{K} \xi_i f_k(U)
+    If we multiply this by a weight function, w, we get
+            f_0(U)*w \approx \sum_{i = 1}^{K} \xi_i f_k(U)*w
+    This function integrates the left and right hand side of the above 
+    expression over the problem domain. To understand how this works, let's
+    consider a particular integral:
             \int_{\Omega} w(X) D F(U(X)) dX
     where \Omega is the integration domain, w is a weight function, D is a
     partial derivative operator, and F(U) is a trial function. We assume both
@@ -41,19 +56,22 @@ def Integrate(w             : Weight_Function,
     different dimensions, however, may have different spacing between them).
     Under this assumption, the partition partitions Omega into a set of smaller
     rectangles. Since the gird is uniform, each sub-rectangle has the same
-    volume. Let V denote that volume. Further, let {X_1, ... , X_N} denote the
-    set points in the partition. Since w is, by assumption, zero along the
-    boundary of Omega, it must be zero at each point on the boundary of Omega.
-    With this assumption, it can be shown that the composite trapezoidal rule
-    approximation to the integral is given by
+    volume. Let V denote that volume. Further, let {X_1, ... , X_N} denote the 
+    set of points in the partition that are also in the support of w. Since w 
+    is, by assumption, zero along the boundary of Omega, it must be zero at 
+    each point on the boundary of Omega. With this assumption, it can be shown 
+    that the composite trapezoidal rule approximation to the integral is given 
+    by
             (-1)^{|D|} V*( \sum_{i = 1}^{N} D w(X_i) F(U(X_i)) )
     (in the trapezoidal rule in R^n, gird points along the boundary are weighted
     differently from those inside the boundary. However, the integrand is zero
     along the boundary points, we can safely ignore those differences and
     pretend that all points are weighted evenly; the points in the summation
     above with the wrong weighting evaluate to zero anyway, so the incorrect
-    weighting is moot). The quantity above is precisely what this function
-    evaluates.
+    weighting is moot). The weight function stores the coordinates, X_1, ... , 
+    X_N as well as the volume V. 
+    
+    This function evaluates the above quantity for each library term. 
 
     ----------------------------------------------------------------------------
     Arguments:
@@ -61,37 +79,104 @@ def Integrate(w             : Weight_Function,
     w : This is a weight function. We assume that the user has already
     calculated D(w) (via the "Add_Derivative" method) on the partition.
 
-    D : This is a derivative operator.
+    U : A neural network that is approximating the system response function on
+    the problem domain. 
 
-    FU_Partition : We assume this is a 1D tensor whose ith entry holds the value
-    of a trial function, F(U), at the ith partition point. That is,
-        FU_Partition[i] = F(U(X_i)).
-    We assume that the user evaluated FU_Partition on the same partition used to
-    evaluate D(w). Thus, the ith entry of w.Derivatives[D] is D(w)(X_i).
+    LHS_Term: The left hand side of the PDE that the system response function 
+    satisfies.
 
-    V : This is the volume of each sub-rectangle in the partition of Omega (see
-    above).
+    RHS_Terms: A list of the library terms that make up the right hand side 
+    of the PDE that the system response function satisfies. 
+
+    Mask: A boolean tensor whose shape matches that of Xi. When calculating 
+    the integral of the kth RHS term, we check if Mask[k] == True. If so, we 
+    set the kth result to the zero tensor. Otherwise, we compute the integral 
+    of the kth library term as usual.
 
     ----------------------------------------------------------------------------
     Returns:
 
-    A single element tensor whose lone entry holds the value
-        (-1)^{|D|} V*( \sum_{i = 1}^{N} D w(X_i) F(U(X_i))) ) 
+    A tuple. The first element holds a single element tensor whose lone entry 
+    holds the value
+        (-1)^{|D_0|} V*( \sum_{i = 1}^{N} D_0 w(X_i) F_0(U(X_i))) ) 
+    Where f_0 = D_0 F_0. The second element is a list whose 
+    kth entry holds a single element tensor whose lone value is
+            (-1)^{|D_k|} V*( \sum_{i = 1}^{N} D_k w(X_i) F_k(U(X_i))) ) 
+    Where f_k = D_k F_k.
     """
 
-    # First, determine the indices of the partition points (subset of
-    # {1, 2, ... , N}) in the support of w.
-    Supported_Indices : torch.Tensor = w.Supported_Indices;
 
-    # Next, extract the corresponding elements of FU_Partition.
-    FU_Partition_Supported : torch.Tensor = FU_Partition[Supported_Indices];
+    ############################################################################
+    # First, determine the highest power of U that we need.
 
-    # Get D(w) evaluated on the partition points in the support of w.
-    Dw_Partition_Supported : torch.Tensor = w.Derivatives[tuple(D.Encoding)];
+    Max_Pow         : int = LHS_Term.Trial_Function.Power;
+    Num_RHS_Terms   : int = len(RHS_Terms);
 
-    # Sum the element-wise product of FU_Partition_Supported and D(w). This yields
-    # the summation \sum_{i = 1}^{N} D w(X_i) F(U(X_i)).
-    Sum : torch.Tensor = torch.sum(torch.multiply(FU_Partition_Supported, Dw_Partition_Supported));
+    for i in range(Num_RHS_Terms):
+        if(RHS_Terms[i].Trial_Function.Power > Max_Pow and Mask[k] == False):
+            Max_Pow = RHS_Terms[i].Trial_Function.Power;
 
-    # Finally, multiply Sum by (-1)^{|D|}V, yielding the integral approximation
-    return torch.multiply(Sum, V*((-1)**D.Order));
+
+    ############################################################################
+    # Next, evaluate U and its powers on the coordinates stored in w.
+
+    # First, lets fetch the coordinates that are in the support of w.
+    Supported_Coords : torch.Tensor = w.Supported_Coords;
+
+    # Next, evaluate U on these coordinates. 
+    U_Coords : torch.Tensor     = U(Supported_Coords).view(-1);
+    Num_Coords  : int           = U_Coords.numel();
+
+    # Next, compute powers of U up to Max_Pow on the partition. We will need
+    # these values for when integrating. We store them in a list.
+    U_Coords_Powers = [];
+
+    U_Coords_Powers.append(torch.ones(Num_Coords, dtype = torch.float32));
+    U_Coords_Powers.append(U_Coords);
+
+    for i in range(2, Max_Pow + 1):
+        U_Coords_Powers.append(torch.multiply(U_Coords,U_Coords_Powers[i - 1]));
+
+
+    ############################################################################
+    # Third, compute the LHS Term integral.
+
+    V               : float         = w.V;
+    F_0_U_Coords    : torch.Tensor  = U_Coords_Powers[LHS_Term.Trial_Function.Power];
+    D_0             : Derivative    = LHS_Term.Derivative;
+
+    # Get D0(w)
+    D_0_w_Coords    : torch.Tensor  = w.Derivatives[tuple(D_0.Encoding)];
+
+    # Sum the element-wise product of F_0_U_Coords and D_0(w). This yields
+    # the summation \sum_{i = 1}^{N} D_0 w(X_i) F_0(U(X_i)).
+    Sum_0           : torch.Tensor  = torch.sum(torch.multiply(F_0_U_Coords, D_0_w_Coords));
+
+    # Finally, multiply Sum by (-1)^{|D_0|}V, yielding the integral approximation
+    LHS_Integral    : torch.Tensor  = torch.multiply(Sum_0, V*((-1)**D_0.Order));
+
+
+    ############################################################################
+    # Forth, compute the RHS Term integrals.
+
+    RHS_Integrals : List[torch.Tensor] = [];
+    for k in range(Num_RHS_Terms):
+        if(Mask[k] == True):
+            RHS_Integrals.append(torch.sum(torch.zeros(1, dtype = torch.float32)));
+
+        F_k_U_Coords    : torch.Tensor  = U_Coords_Powers[RHS_Terms[k].Trial_Function.Power];
+        D_k             : Derivative    = RHS_Terms[k].Derivative;
+
+        # Get D_k(w)
+        D_k_w_Coords    : torch.Tensor  = w.Derivatives[tuple(D_k.Encoding)];
+
+        # Sum the element-wise product of F_k_U_Coords and D_k(w). This yields
+        # the summation \sum_{i = 1}^{N} D_k w(X_i) F_k(U(X_i)).
+        Sum_k           : torch.Tensor  = torch.sum(torch.multiply(F_k_U_Coords, D_k_w_Coords));
+
+        # Finally, multiply Sum by (-1)^{|D_k|}V, yielding the integral approximation
+        RHS_Integrals.append(torch.multiply(Sum_k, V*((-1)**D_k.Order)));  
+    
+
+    # All done!
+    return (LHS_Integral, RHS_Integrals);

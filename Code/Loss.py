@@ -23,6 +23,7 @@ from Trial_Function     import Trial_Function;
 from Weight_Function    import Weight_Function;
 
 
+
 def Data_Loss(
         U           : Network,
         Inputs      : torch.Tensor,
@@ -55,7 +56,6 @@ def Data_Loss(
     A scalar tensor whose sole entry holds the mean square data loss. 
     """
 
-
     # Evaluate U at the data points.
     U_Predict = U(Inputs).view(-1);
 
@@ -75,14 +75,14 @@ def Weak_Form_Loss( U                   : Network,
                     Weight_Functions    : List[Weight_Function]) -> Tuple[torch.Tensor, torch.Tensor]:
     """ 
     We assume the underlying PDE is
-        DF(U) = c_1 D_1 F_1(U) + ... + c_n D_n F_n(U).
+        D_0 F_0(U) = c_1 D_1 F_1(U) + ... + c_n D_K F_K(U).
     Since this equation is valid on the entire problem domain, Omega, we should
     also have
-        \int_{\Omega} w DF(U) dX = \sum_{i = 1}^{n} c_i \int_{\Omega} w D_i F_i(U) dX
-    for any function , w, defined on Omega. Since the neural network, U, and
+        \int_{\Omega} w D_0 F_0(U) dX = \sum_{k = 1}^{K} c_i \int_{\Omega} w D_k F_k(U) dX
+    for any function, w, defined on Omega. Since the neural network, U, and
     vector Xi approximate the system response function and coefficient vector
     (c_1, ... , c_n), respectively, we expect that for each w,
-        \int_{\Omega} w DF(U) dX \approx \sum_{i = 1}^{n} Xi_i \int_{\Omega} w D_i F_i(U) dX
+        \int_{\Omega} w D_0 F_k(U) dX \approx \sum_{k = 1}^{K} Xi_i \int_{\Omega} w D_i F_i(U) dX
 
     This function calculates the left and right of the expression above for each
     function in Weight_Functions. This gives us a system of linear equations in
@@ -94,7 +94,7 @@ def Weak_Form_Loss( U                   : Network,
     That is, A_{i,j} holds the value of the integral of the jth library term
     times the ith weight function. Likewise, b \in R^m is the vector whose
     ith entry holds the value
-            \int_{\Omega} w_i(X) D F(U(X)) dX.
+            \int_{\Omega} w_i(X) D_0 F_k(U(X)) dX.
     We approximate these integrals using a quadrature rule. We evaluate U at the
     Partition_Coords (which should be the same array of coordinates we used to
     initialize each weight function). We then use this to evaluate F_j(U) on the
@@ -111,7 +111,8 @@ def Weak_Form_Loss( U                   : Network,
 
     Mask: A boolean tensor whose shape matches that of Xi. When adding the kth 
     RHS term to the Library_Xi product, we check if Mask[k] == False. If so, 
-    We add 0*Xi[k]. Otherwise, we compute the kth library term as usual.
+    We add 0*Xi[k]. Otherwise, we compute the integral of the kth library 
+    term as usual.
 
     LHS_Term : The Left Hand Side library term. This is DF(U) in the PDE.
 
@@ -130,82 +131,34 @@ def Weak_Form_Loss( U                   : Network,
     ith component of A*xi. 
     """
 
-
-    ############################################################################
-    # First, determine the highest power of U that we need.
-
-    Max_Pow         : int = LHS_Term.Trial_Function.Power;
-    Num_RHS_Terms   : int = len(RHS_Terms);
-
-    for i in range(Num_RHS_Terms):
-        if(RHS_Terms[i].Trial_Function.Power > Max_Pow):
-            Max_Pow = RHS_Terms[i].Trial_Function.Power;
-
-
-    ############################################################################
-    # Evaluate powers of U on the partition
-
-    # Now, evaluate U at the coords.
-    U_Partition : torch.Tensor  = U(Partition).view(-1);
-    Num_Coords  : int           = U_Partition.numel();
-
-    # Next, compute powers of U up to Max_Pow on the partition. We will need
-    # these values for when integrating. We store them in a list.
-    U_Partition_Powers = [];
-
-    U_Partition_Powers.append(torch.ones(Num_Coords, dtype = torch.float32));
-    U_Partition_Powers.append(U_Partition);
-
-    for i in range(2, Max_Pow + 1):
-        U_Partition_Powers.append(torch.pow(U_Partition, i));
-
-
     ############################################################################
     # Construct the loss.
     # The loss takes the form (1/m)||A \xi - b||_2^2, where b \in R^M (M = Number of
     # weight functions) is defined by
-    #       b_i = \int w_i(X) D(F(U(X))) dX
-    # where w_i is the ith weight function and D(F(U)) is the RHS term.
+    #       b_i = \int w_i(X) D_0(F_0(U(X))) dX
+    # where w_i is the ith weight function and D_0(F_0(U)) is the LHS term.
     # Likewise, A \in R^{m x n} is defined by
     #       A_{i,j} = \int w_i(X) D_j(F_j(U(X))) dX
-    # where D_j(F_j(U)) is the jth trial function.
+    # where D_j(F_j(U)) is the jth RHS term.
 
-    m : int             = len(Weight_Functions);
-    n : int             = len(RHS_Terms);
+    M : int             = len(Weight_Functions);
+    K : int             = len(RHS_Terms);
 
-    # Construct b.
-    b : torch.Tensor    = torch.empty(m, dtype = torch.float32);
+    # Set up A, b.
+    b       : torch.Tensor  = torch.empty(M, dtype = torch.float32);
+    A_Xi    : torch.Tensor  = torch.zeros(M, dtype = torch.float32);
 
-    for i in range(m):
-        b[i] = Integrate(   w               = Weight_Functions[i],
-                            D               = LHS_Term.Derivative,
-                            FU_Partition    = U_Partition_Powers[LHS_Term.Trial_Function.Power],
-                            V               = V);
-
-    # Construct A \xi column by column
-    A_Xi : torch.Tensor = torch.zeros(m, dtype = torch.float32);
-
-    for j in range(n):
-        # If the jth term is masked, skip it.
-        if(Mask[j] == True):
-            A_Xi += 0.0*Xi[j];
-            continue;
-
-        D_j : Derivative        = RHS_Terms[j].Derivative;
-        F_j : Trial_Function    = RHS_Terms[j].Trial_Function;
-        A_j : torch.Tensor      = torch.empty(m, dtype = torch.float32);
-
-        for i in range(m):
-            A_j[i]  = Integrate(w               = Weight_Functions[i],
-                                D               = D_j,
-                                FU_Partition    = U_Partition_Powers[F_j.Power],
-                                V               = V);
-        #print(RHS_Terms[j]);
-        #print(U_Partition_Powers[F_j.Power]);
-        #print(A_j);
-
-        A_Xi += torch.multiply(A_j, Xi[j]);
-
+    for m in range(M):
+        # First, compute the integrals for the kth weight function.
+        wm_LHS, wm_RHSs = Integrate(w           = Weight_Functions[m], 
+                                    U           = U,
+                                    LHS_Term    = LHS_Term, 
+                                    RHS_Terms   = RHS_Terms,
+                                    Mask        = Mask);
+        b[m]    = wm_LHS;
+        for k in range(K):
+            A_Xi += Xi[k]*wm_RHSs[k];
+    
     # Compute loss! (this is (1/m)||A \xi - b ||_2^2).
     Residual : torch.Tensor = torch.subtract(b, A_Xi);
     return ((torch.sum(Residual**2))/float(m), Residual);
@@ -297,7 +250,6 @@ def L2_Squared_Loss(U : Network) -> torch.Tensor:
     A single element tensor whose lone element holds the square of the L2 norm 
     of U's parameter vector.
     """
-
 
     # Setup. 
     L2_Loss     : torch.Tensor  = torch.zeros(1, dtype = torch.float32);

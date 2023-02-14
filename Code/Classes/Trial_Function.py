@@ -25,6 +25,8 @@ class Trial_Function():
         assert(Power >= 0);
         self.Power = Power;
 
+
+
     def __str__(self) -> str:
         """ 
         This function returns a string that contains a human-readable form of 

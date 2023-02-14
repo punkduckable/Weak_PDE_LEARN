@@ -15,15 +15,20 @@ class Weight_Function(torch.nn.Module):
                 { 0                                                         otherwise
     where p_1, ... , p_n are positive integers. Such a function is C^infinity
 
-    A weight function is always paired with a set of coordinates. We assume that
-    you'll want to compute various integrals of the form
+    A weight function is always paired with a set of coordinates. We assume 
+    these coordinates lie on a regular grid. The associated grid lines partition
+    the problem domain into a set of rectangles. We assume each rectangle has 
+    a volume of V. We use these coordinates to compute various integrals of the 
+    form
             \int_{S} w(X) D^{(k)} F_k(U(X)) dX),
     for some set S. Here, D^{(k)} is a partial derivative operator, and F_k(U)
-    is a trial function. To approximate this integral, we evaluate the integrand
-    at a set of points in S. We assume that we use the same points for every
-    integral involving a particular weight function. Under this assumption, each
-    weight function can be paired with a set of coordinates.
-
+    is a trial function. To approximate this integral, we use the n-dimensional 
+    composite trapezoidal rule on the grid. It can be shown that in this case 
+    (and assuming the integrand is zero along the boundary), the trapezoidal 
+    rule in this case is equal to the sum over i of the integrand evaluated at
+    the ith grid point, multiplied by V (volume of any onf of the rectangles 
+    engendered by the regular grid).
+    
     Using the same set of coordinates for each integral also allows for a key
     performance breakthrough: We only need to evaluate w and its derivatives at
     the coordinates once. Once we have these values, we can then use them each
@@ -82,7 +87,6 @@ class Weight_Function(torch.nn.Module):
     def __init__(   self,
                     X_0     : torch.Tensor,
                     r       : float,
-                    Powers  : torch.Tensor,
                     Coords  : torch.Tensor, 
                     V       : float) -> None:
         """ 
@@ -94,11 +98,6 @@ class Weight_Function(torch.nn.Module):
         X_0 : The center of the weight function. See class docstring.
 
         r : The radius of the weight function. See class docstring.
-
-        Powers : A list of integers. We are using Polynomial weight functions,
-        then this defines the function (as well as how many derivatives we can
-        take). If we are using bump functions (either kind), then this is an
-        unused parameter.
 
         Coords : A list of coordinates. Whenever we apply a derivative to w, we
         evaluate (and store) the derivative at the coordinates in Coords. We
@@ -121,8 +120,6 @@ class Weight_Function(torch.nn.Module):
         assert(len(Coords.shape) == 2);             # Coords should be a 2D Tensor.
         assert(Coords.shape[1] == X_0.shape[0]);    # X_0 should be in the same space as the Coords
         assert(r > 0);                              # radius must be positive.
-        assert(torch.sum(Powers <= 0) == 0);        # Each power must be positive (to ensure smoothness)
-        assert(Powers.numel() == X_0.numel());      # There should be n powers.
 
 
         ########################################################################
@@ -132,7 +129,6 @@ class Weight_Function(torch.nn.Module):
         self.X_0            : torch.Tensor  = X_0;
         self.Input_Dim      : int           = X_0.numel();
         self.r              : float         = r;
-        self.Powers         : torch.Tensor  = Powers.to(dtype = torch.int32);
         self.V              : float         = V;
 
         # Get Num_Coords.
@@ -150,110 +146,10 @@ class Weight_Function(torch.nn.Module):
         Max_XmX0                    : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
 
         # Now, determine which coordinates are in B_r(X_0).
-        self.Supported_Indices      : torch.Tensor  = torch.less(Max_XmX0, self.r);
+        Supported_Indices           : torch.Tensor  = torch.less(Max_XmX0, self.r);
 
         # Record the coordinates that are.
-        self.Supported_Coords       : torch.Tensor  = Coords[self.Supported_Indices, :];
-
-
-
-    # Polynomial. If using, weight functions need a "Powers" attribute and use
-    # inf norm to determine supported points.
-    #def forward(self, X : torch.Tensor) -> torch.Tensor:
-        """ 
-        This method evaluates the weight function at each coordinate of X.
-
-        ------------------------------------------------------------------------
-        Arguments:
-
-        X : A 2D tensor, each row of which holds a coordinate at which we want
-        to evaluate the weight function. If this weight function object is
-        defined on R^n, then X should be a B by n tensor.
-
-        ------------------------------------------------------------------------
-        Returns:
-
-        A B element tensor whose ith entry is w evaluated at the ith coordinate
-        (ith row of X). """
-        """
-        # w(X) = { prod_{i = 1}^{n} ((X0_i + r - X_i)(X_i - X0_i + r)/r^2)^p_i if ||X - X_0||_{max} < r
-        #        { 0                                                            otherwise
-
-        # First, calculate || X - X_0 ||_{infinity}.
-        XmX0                : torch.Tensor  = torch.subtract(X, self.X_0);
-        Max_XmX0            : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
-
-        # Determine which coordinates are in B_r(X_0).
-        Supported_Indices   : torch.Tensor  = torch.less(Max_XmX0, self.r);
-
-        # Extract the coordinates in B_r(X_0).
-        X_Supported         : torch.Tensor  = X[Supported_Indices, :];
-
-        # Calculate (X - (X0 + r))/r and (X - (X0 - r))/r.
-        X0prmX              : torch.Tensor  = torch.subtract(torch.add(self.X_0, self.r), X_Supported);
-        XmX0pr              : torch.Tensor  = torch.subtract(X_Supported, torch.subtract(self.X_0, self.r));
-
-        # Now compute their element wise product.
-        X0prmX_XmX0pr_r2    : torch.Tensor  = torch.divide(torch.multiply(X0prmX, XmX0pr), (self.r)*(self.r));
-
-        # Raise to the power Powers[i].
-        X0prmX_XmX0pr_r2_pi : torch.Tensor  = torch.pow(X0prmX_XmX0pr_r2, self.Powers);
-
-        # Compute the product of the columns of the above tensor. This yields a
-        # tensor whose ith entry is w(X_i).
-        w_X_Supported       : torch.Tensor  = torch.prod(X0prmX_XmX0pr_r2_pi, dim = 1);
-
-        # Calculate w at the rest of the coordinates.
-        w_X                 : torch.Tensor  = torch.zeros(X.shape[0], dtype = X.dtype);
-        w_X[Supported_Indices]              = w_X_Supported;
-
-        # Return!
-        return w_X;
-        """
-
-
-
-    # Bump in R^n. If using, make init use 2 norm to determine supported points.
-    #def forward(self, X : torch.Tensor) -> torch.Tensor:
-        """ 
-        This method evaluates the weight function at each coordinate of X.
-
-        ------------------------------------------------------------------------
-        Arguments:
-
-        X : A 2D tensor, each row of which holds a coordinate at which we want
-        to evaluate the weight function. If this weight function object is
-        defined on R^n, then X should be a B by n tensor.
-
-        ------------------------------------------------------------------------
-        Returns:
-
-        A B element tensor whose ith entry is w evaluated at the ith coordinate
-        (ith row of X). """
-        """
-        # w(X) = { exp( 7.5r^2/(||X - X_0||^2 - r^2) + 7.5 )    if || X - X_0|| < r.
-        #        { 0                                            otherwise
-
-        # First, calculate || X - X_0 ||_2^2.
-        XmX0                : torch.Tensor  = torch.subtract(X, self.X_0);
-        Norm_XmX0           : torch.Tensor  = torch.sum(torch.multiply(XmX0, XmX0), dim = 1);
-
-        # Now, determine which points are in B_r(X_0), and which are not.
-        Indices_In_BrX0     : torch.Tensor  = torch.less(Norm_XmX0, (self.r)*(self.r));
-
-        # Evaluate w at the points in B_r(X_0).
-        Norm_XmX0_In_BrX0   : torch.Tensor  = Norm_XmX0[Indices_In_BrX0];
-        Denominators        : torch.Tensor  = torch.subtract(Norm_XmX0_In_BrX0, (self.r)**2);
-        Exponents           : torch.Tensor  = torch.add(torch.divide(torch.full_like(Denominators, 7.5*(self.r)**2), Denominators), 7.5);
-        w_X_In_BrX0         : torch.Tensor  = torch.exp(Exponents);
-
-        # Put everything together.
-        w_X                 : torch.Tensor  = torch.zeros_like(Norm_XmX0);
-        w_X[Indices_In_BrX0]                = w_X_In_BrX0;
-
-        # Return!
-        return w_X;
-        """
+        self.Supported_Coords       : torch.Tensor  = Coords[Supported_Indices, :];
 
 
 
@@ -422,10 +318,6 @@ def Evaluate_Derivative(
     # Make sure we can actually compute the derivatives. For this, we need
     # the input dimension of f to be <= the size of D's encoding vector.
     assert(D.Encoding.size <= w.Input_Dim);
-
-    # We also need D.Encoding to be less (element-wise) than w.Powers.
-    #Powers_np : numpy.ndarray = w.Powers.numpy();
-    #assert(numpy.sum(D.Encoding >= Powers_np) == 0);
 
     # Now, let's get to work. The plan is the following: Suppose we want to find
     # D_t^{m(t)} D_x^{m(x)} D_y^{m(y)} D_z^{m(z)} w. First, we compute
