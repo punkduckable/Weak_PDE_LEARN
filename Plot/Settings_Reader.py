@@ -13,7 +13,7 @@ sys.path.append(Readers_Path);
 import  torch;
 from    typing      import List, Dict;
 
-from    File_Reader import Read_Error, Read_List_Setting, Read_Setting;
+from    File_Reader import Read_Error, Read_List_Setting, Read_Bool_Setting, Read_Setting;
 
 
 
@@ -38,11 +38,14 @@ def Settings_Reader() -> Dict:
     Settings    = {};
 
     # Where is the saved state?
-    Settings["Load File Name"]  = Read_Setting(File, "Load File Name [str]:");
+    Settings["Load File Name"]      = Read_Setting(File, "Load File Name [str]:");
 
     # Read the Data file names. Note that the data files should NOT contain 
     # noise.
-    Settings["Mat File Names"]  = Read_List_Setting(File, "Mat File Names [List of str]:");
+    Settings["Mat File Names"]      = Read_List_Setting(File, "Mat File Names [List of str]:");
+
+    # Read if we should make transparent plots.
+    Settings["Transparent Plots"]    = Read_Bool_Setting(File, "Transparent Plots [bool]:")
 
     # All done! Return the settings!
     File.close();

@@ -30,10 +30,6 @@ import  matplotlib.pyplot       as      pyplot;
 
 
 
-Transparent_Plot : bool = True;
-
-
-
 def Plot_U( Load_File_Name          : str,
             Mat_File_Names          : List[str],
             Device                  : torch.device,
@@ -181,7 +177,7 @@ def Plot_U( Load_File_Name          : str,
     ############################################################################
     # Plot
 
-    if(Transparent_Plot == True):
+    if(Settings["Transparent Plots"] == True):
         pyplot.style.use('dark_background');
 
     # First, set up a folder to save the plots in.
@@ -212,7 +208,7 @@ def Plot_U( Load_File_Name          : str,
         pyplot.xlabel("t");
         pyplot.ylabel("x");
         pyplot.title("Neural Network Approximation");
-        pyplot.savefig(Plot_Directory_Path + "/U_" + Mat_File_Names[k] + ".png", dpi = 500, transparent = Transparent_Plot);
+        pyplot.savefig(Plot_Directory_Path + "/U_" + Mat_File_Names[k] + ".png", dpi = 500, transparent = Settings["Transparent Plots"]);
 
         Figure_Index += 1;
 
@@ -237,7 +233,7 @@ def Plot_U( Load_File_Name          : str,
         pyplot.xlabel("t");
         pyplot.ylabel("x");
         pyplot.title("Error (Approximate minus true solution)");
-        pyplot.savefig(Plot_Directory_Path + "/Error_" + Mat_File_Names[k] + ".png", dpi = 500, transparent = Transparent_Plot);
+        pyplot.savefig(Plot_Directory_Path + "/Error_" + Mat_File_Names[k] + ".png", dpi = 500, transparent = Settings["Transparent Plots"]);
 
         Figure_Index += 1;
 
@@ -262,7 +258,7 @@ def Plot_U( Load_File_Name          : str,
         pyplot.xlabel("t");
         pyplot.ylabel("x");
         pyplot.title("PDE Residual");
-        pyplot.savefig(Plot_Directory_Path + "/PDE_Residual_" + Mat_File_Names[k] + ".png", dpi = 500, transparent = Transparent_Plot);
+        pyplot.savefig(Plot_Directory_Path + "/PDE_Residual_" + Mat_File_Names[k] + ".png", dpi = 500, transparent = Settings["Transparent Plots"]);
 
         Figure_Index += 1;
     

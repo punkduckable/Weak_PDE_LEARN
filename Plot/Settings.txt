@@ -1,10 +1,13 @@
 ################################################################################
-# 2D U Plot Settings.
+# U Plot Settings.
 
 # Where are the state_dict's for the networks we want to plot? (The plot we
 # generate will have the same name)
-Load File Name [str]:                            Ks_Sine_N50_P4000_Tanh_Adam_1
+Load File Name [str]:                            KS_Sine_N50_P4000_Rational_Adam
 
 # What is the MATLAB dataset for each solution network? There should be one 
 # .mat file for each data set in the saved file. 
 Mat File Names [List of str]:                    [KS_Sine]
+
+# Should we make the plot backgrounds transparent? 
+Transparent Plots [bool]:                        False
