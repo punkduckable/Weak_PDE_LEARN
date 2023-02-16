@@ -127,7 +127,7 @@ def Plot_Losses(Save_File_Name      : str,
     plt.ylabel("Loss");
     plt.yscale('log');
     plt.legend();
-    plt.savefig(Plot_Directory_Path + "/CWea_Loss.png", dpi = 500);
+    plt.savefig(Plot_Directory_Path + "/Weak_Loss.png", dpi = 500);
 
     # Make a figure for the history of the Lp loss.
     plt.figure(3);

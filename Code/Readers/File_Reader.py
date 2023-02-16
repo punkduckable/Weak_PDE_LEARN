@@ -13,9 +13,9 @@ class End_Of_File_Error(Exception):
 
 
 def Index_After_Phrase(
-        Line_In   : str,
-        Phrase_In : str,
-        Case_Sensitive : bool = False) -> int:
+        Line_In         : str,
+        Phrase_In       : str,
+        Case_Sensitive  : bool = False) -> int:
     """ 
     This function searches for the substring Phrase_In within Line_In.
 
