@@ -240,14 +240,14 @@ def main():
             param_group['lr'] = Settings["Learning Rate"];
 
     # Setup is now complete. Report time.
-    print("Set up complete! Took %7.2fs" % (time.perf_counter() - Setup_Timer));
+    print("Set up complete! Took %7.2fs\n" % (time.perf_counter() - Setup_Timer));
     
 
 
     ############################################################################
     # Set up weight functions.
 
-    print("Reminder: Replace the \"Setup Weight Functions\" code with something better...", end = '');
+    print("Reminder: Replace the \"Setup Weight Functions\" code with something better...\n");
 
     Weight_Functions_List : List[List[Weight_Function]] = [];
     for i in range(Num_DataSets):
@@ -256,11 +256,22 @@ def main():
         ith_Partition   : torch.tensor  = Setup_Partition(  Axis_Partition_Size = Settings["Axis Partition Size"],
                                                             Bounds              = ith_Bounds);
 
-        # Set up the volume for the ith data set!
+        # Set up the volume for the ith data set (and report).
         ith_V : float = 1;
-        for i in range(Num_Dimensions):
-            ith_V *= (ith_Bounds[i, 1] - ith_Bounds[i, 0])/float(Settings["Axis Partition Size"]);
+        for j in range(Num_Dimensions):
+            ith_V *= (ith_Bounds[j, 1] - ith_Bounds[j, 0])/float(Settings["Axis Partition Size"]);
+        
+        # Report problem domain, sub-rectangle volume.
+        print("Problem domain %d:" % i); 
+        print("\tBounds               - ", end = '');
 
+        for j in range(Num_Dimensions):
+            print("[%g, %g]" % (Data_Dict["Input Bounds"][i][j][0], Data_Dict["Input Bounds"][i][j][1]), end = '');
+            if(j != Num_Dimensions - 1):
+                print(" x ", end = '');
+            else:
+                print();
+        print("\tSub-rectangle volume - %f" % ith_V);
 
         # Set up weight functions for the ith data set.
         ith_Min_Side_Length : float = ith_Bounds[0, 1] - ith_Bounds[0, 0];
@@ -277,7 +288,7 @@ def main():
         # centers in [a_1 + r + e, b_1 - r - e] x ... x [a_n - r + e, b_n - r - e],
         # where e = Epsilon is some small positive number (to ensure the weight
         # function support is in the domain).
-        Epsilon             : float         = 0.00001;
+        Epsilon             : float         = 0.0005;
         Trimmed_ith_Bounds  : numpy.ndarray = numpy.empty_like(ith_Bounds);
 
         for i in range(Num_Dimensions):

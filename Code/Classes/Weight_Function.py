@@ -116,10 +116,10 @@ class Weight_Function(torch.nn.Module):
         ########################################################################
         # Checks
 
-        assert(len(X_0.shape) == 1);                # X_0 should be a 1D Tensor.
-        assert(len(Coords.shape) == 2);             # Coords should be a 2D Tensor.
-        assert(Coords.shape[1] == X_0.shape[0]);    # X_0 should be in the same space as the Coords
-        assert(r > 0);                              # radius must be positive.
+        assert(len(X_0.shape)       == 1);              # X_0 should be a 1D Tensor.
+        assert(len(Coords.shape)    == 2);              # Coords should be a 2D Tensor.
+        assert(Coords.shape[1]      == X_0.shape[0]);   # X_0 should be in the same space as the Coords
+        assert(r > 0);                                  # radius must be positive.
 
 
         ########################################################################

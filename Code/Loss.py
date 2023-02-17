@@ -78,7 +78,7 @@ def Weak_Form_Loss( U                   : Network,
         D_0 F_0(U) = c_1 D_1 F_1(U) + ... + c_n D_K F_K(U).
     Since this equation is valid on the entire problem domain, Omega, we should
     also have
-        \int_{\Omega} w D_0 F_0(U) dX = \sum_{k = 1}^{K} c_i \int_{\Omega} w D_k F_k(U) dX
+        \int_{\Omega} w D_0 F_0(U) dX = \sum_{k = 1}^{K} c_k \int_{\Omega} w D_k F_k(U) dX
     for any function, w, defined on Omega. Since the neural network, U, and
     vector Xi approximate the system response function and coefficient vector
     (c_1, ... , c_n), respectively, we expect that for each w,
@@ -149,7 +149,7 @@ def Weak_Form_Loss( U                   : Network,
     A_Xi    : torch.Tensor  = torch.zeros(M, dtype = torch.float32);
 
     for m in range(M):
-        # First, compute the integrals for the kth weight function.
+        # First, compute the integrals for the mth weight function.
         wm_LHS, wm_RHSs = Integrate_PDE(w           = Weight_Functions[m], 
                                         U           = U,
                                         LHS_Term    = LHS_Term, 
@@ -157,11 +157,12 @@ def Weak_Form_Loss( U                   : Network,
                                         Mask        = Mask);
         b[m]    = wm_LHS;
         for k in range(K):
-            A_Xi[m] += Xi[k]*wm_RHSs[k];
+            if(Mask[k] == False):
+                A_Xi[m] += Xi[k]*wm_RHSs[k];
     
     # Compute loss! (this is (1/m)||A \xi - b ||_2^2).
     Residual : torch.Tensor = torch.subtract(b, A_Xi);
-    return ((torch.sum(Residual**2))/float(m), Residual);
+    return (torch.mean(torch.multiply(Residual, Residual)), Residual);
 
 
 

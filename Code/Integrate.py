@@ -126,10 +126,7 @@ def Integrate_PDE(  w               : Weight_Function,
 
 	# Next, compute powers of U up to Max_Pow on the partition. We will need
 	# these values for when integrating. We store them in a list.
-	U_Coords_Powers = [];
-
-	U_Coords_Powers.append(torch.ones(Num_Coords, dtype = torch.float32));
-	U_Coords_Powers.append(U_Coords);
+	U_Coords_Powers = [torch.ones_like(U_Coords), U_Coords];
 
 	for i in range(2, Max_Pow + 1):
 		U_Coords_Powers.append(torch.pow(U_Coords, i));
@@ -142,7 +139,7 @@ def Integrate_PDE(  w               : Weight_Function,
 	F_0_U_Coords    : torch.Tensor  = U_Coords_Powers[LHS_Term.Trial_Function.Power];
 	D_0             : Derivative    = LHS_Term.Derivative;
 
-	# Get D0(w)
+	# Get D_0(w)
 	D_0_w_Coords    : torch.Tensor  = w.Derivatives[tuple(D_0.Encoding)];
 
 	# Sum the element-wise product of F_0_U_Coords and D_0(w). This yields
@@ -150,7 +147,7 @@ def Integrate_PDE(  w               : Weight_Function,
 	Sum_0           : torch.Tensor  = torch.sum(torch.multiply(F_0_U_Coords, D_0_w_Coords));
 
 	# Finally, multiply Sum by (-1)^{|D_0|}V, yielding the integral approximation
-	LHS_Integral    : torch.Tensor  = torch.multiply(Sum_0, V*((-1)**D_0.Order));
+	LHS_Integral    : torch.Tensor  = torch.multiply(Sum_0, V*((-1.)**D_0.Order));
 
 
 	############################################################################
@@ -172,7 +169,7 @@ def Integrate_PDE(  w               : Weight_Function,
 		Sum_k           : torch.Tensor  = torch.sum(torch.multiply(F_k_U_Coords, D_k_w_Coords));
 
 		# Finally, multiply Sum by (-1)^{|D_k|}V, yielding the integral approximation
-		RHS_Integrals.append(torch.multiply(Sum_k, V*((-1)**D_k.Order)));  
+		RHS_Integrals.append(torch.multiply(Sum_k, V*((-1.)**D_k.Order)));  
 
 
 	# All done!

@@ -125,21 +125,21 @@ def Training(
         if (torch.is_grad_enabled()):
             Optimizer.zero_grad();
 
-        # Set up buffers to hold the losses
-        Weak_Loss_Value     = torch.zeros(1, dtype = torch.float32);
-        Data_Loss_Value     = torch.zeros(1, dtype = torch.float32);
-        L2_Loss_Value       = torch.zeros(1, dtype = torch.float32);
+        # Set up a buffer to hold the total loss. 
         Total_Loss_Value    = torch.zeros(1, dtype = torch.float32);
 
         # First, calculate the Lp loss, since it is not specific to each data set.
         Lp_Loss_Value = Lp_Loss(    Xi      = Xi,
                                     Mask    = Mask,
                                     p       = p);
-        Lp_Loss_Buffer = Lp_Loss_Value.detach().item();
 
         # Now calculate the losses for each data set.
         for i in range(Num_DataSets):
-            # Get the collocation, data, and L2 loss for the ith data set.
+            # Get the data, weak form and L2 loss for the ith data set.
+            ith_Data_Loss_Value = Data_Loss(U                   = U_List[i],
+                                            Inputs              = Inputs_List[i],
+                                            Targets             = Targets_List[i]);
+
             ith_Weak_Form_Loss_Value, ith_Residual = Weak_Form_Loss(
                                             U                   = U_List[i],
                                             Xi                  = Xi,
@@ -147,10 +147,6 @@ def Training(
                                             LHS_Term            = LHS_Term,
                                             RHS_Terms           = RHS_Terms,
                                             Weight_Functions    = Weight_Functions_List[i]);
-
-            ith_Data_Loss_Value = Data_Loss(U                   = U_List[i],
-                                            Inputs              = Inputs_List[i],
-                                            Targets             = Targets_List[i]);
 
             ith_L2_Loss_Value = L2_Squared_Loss(U = U_List[i]);
 
@@ -166,10 +162,7 @@ def Training(
             L2_Loss_List[i]     = ith_L2_Loss_Value.detach().item();
             Total_Loss_List[i]  = ith_Total_Loss_Value.detach().item();
 
-            # Finally, accumulate the losses.
-            Weak_Loss_Value     += ith_Weak_Form_Loss_Value;
-            Data_Loss_Value     += ith_Data_Loss_Value;
-            L2_Loss_Value       += ith_L2_Loss_Value;
+            # Finally, accumulate the total loss.
             Total_Loss_Value    += ith_Total_Loss_Value;
 
         # Back-propagate to compute gradients of Total_Loss with respect to
