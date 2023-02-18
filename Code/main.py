@@ -14,15 +14,14 @@ sys.path.append(Classes_Path);
 import  numpy;
 import  torch;
 import  time;
-from    typing              import Dict, List, Tuple;
+from    typing              import Dict, List;
 
 from    Settings_Reader     import Settings_Reader;
 from    Library_Reader      import Read_Library;
 
-from    Network             import Rational, Network;
+from    Network             import Network;
 from    Weight_Function     import Weight_Function;
 from    Library_Term        import Library_Term, Build_Library_Term_From_State;
-from    Derivative          import Derivative;
 
 from    Data                import Data_Loader;
 from    Points              import Generate_Points, Setup_Partition;

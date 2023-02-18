@@ -12,7 +12,7 @@ def Generate_Points(
     This function generates a two-dimensional tensor, each row of which holds a 
     randomly generated coordinate that lies in the rectangle defined by Bounds.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     Bounds: A two-column tensor. Whose ith row contains the lower and upper
@@ -22,14 +22,14 @@ def Generate_Points(
 
     Device: The device you want the Point tensor to be stored on.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     A Num_Points row tensor, each row of which contains a randomly generated
     coordinate in the rectangle specified by Bounds. Suppose that
             Bounds = [[a_1, b_1], ... , [a_n, b_n]]
     Then the ith row of the returned tensor contains a coordinate that lies
-    within [a_1, b_1]x...x[a_n, b_n]. 
+    within [a_1, b_1] x ... x [a_n, b_n]. 
     """
 
 
@@ -73,21 +73,22 @@ def Setup_Partition(Axis_Partition_Size : int,
     p_i is an element of the partition of [a_i, b_i]. Currently, this function
     works when n = 2, 3, and 4.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
-    Axis_Partition_Size : The number of gird lines we want along each axis. This
-    is the size of the partition of any sub-rectangle, [a_i, b_i].
+    Axis_Partition_Size : The number of gird lines we want along each axis. 
+    This is the size of the partition of any sub-rectangle, [a_i, b_i].
 
     Bounds : A 2D array whose ith row is [a_i, b_i]. This function generates a
     uniform partition on the rectangle [a_1, b_1] x ... x [a_n, b_n]. Bounds
     defines the rectangle.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     A 2D array whose ith row holds the coordinates of the ith partition point.
-    In particular, this array will have size (Axis_Partition_Size^n) x n. """
+    In particular, this array will have size (Axis_Partition_Size^n) x n. 
+    """
 
     # Aliases.
     Nd : int = Bounds.shape[0];

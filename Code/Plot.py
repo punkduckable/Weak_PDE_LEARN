@@ -175,9 +175,9 @@ def Make_Parameter_DataFrame(   Parameter_Losses    : List[numpy.ndarray],
     1D column matrix. Obviously, by doing this we lose some information (like which experiment or
     epoch number a given entry of the "Losses" column belongs to). The other three columns give
     us this extra information. The ith entry of "Experiment" specifies which experiment (column of
-    Train/Test_Losses) the ith entry of "Losses" belongs to. Finally, the ith entry of "Epoch Number"
-    specifies the epoch number (from a particular experiment) when we recorded the value in the ith
-    entry of "Losses".
+    Train/Test_Losses) the ith entry of "Losses" belongs to. Finally, the ith entry of "Epoch 
+    Number" specifies the epoch number (from a particular experiment) when we recorded the value in 
+    the ith entry of "Losses".
     """
 
     assert(len(Parameter_Losses) == len(Labels));

@@ -81,7 +81,7 @@ def Training(
 
     Device: The device for U and Xi.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     A dictionary with the following keys:
@@ -200,7 +200,7 @@ def Testing(
     """ 
     This function evaluates the losses.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     U_List: A list of Networks whose ith element holds the network that 
@@ -240,15 +240,15 @@ def Testing(
 
     Device: The device for the U_i's and Xi.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     A dictionary with the following keys:
         "Coll Loss", "Data Loss", "L2 Loss": lists of floats whose ith entry
         holds the corresponding loss for the ith data set. 
 
-        "Total Loss": a list of floats whose ith entry houses the total loss for
-        the ith data set.
+        "Total Loss": a list of floats whose ith entry houses the total loss 
+        for the ith data set.
 
         "Lp Loss": A float housing the value of the Lp loss.
     """

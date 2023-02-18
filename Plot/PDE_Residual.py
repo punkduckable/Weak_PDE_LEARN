@@ -48,7 +48,7 @@ def PDE_Residual(
     This function evaluates the PDE residual at each collocation point, and 
     then returns this information in a tensor.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     U: The Neural Network that approximates the solution.
@@ -71,7 +71,7 @@ def PDE_Residual(
 
     Device: The device (gpu or cpu) that we train on.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     A 1D tensor whose ith entry holds the PDE residual at the ith collocation

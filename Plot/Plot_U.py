@@ -42,7 +42,7 @@ def Plot_U( Load_File_Name          : str,
     only works if the underlying dataset comes from MATLAB. Further, this 
     function only works for datasets with one spatial dimension.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     Load_File_Name: The Save file that contains each solution network's saved
@@ -65,7 +65,7 @@ def Plot_U( Load_File_Name          : str,
     x_Coords_Matrix_List[k]. The i,j entry of the kth list item holds the 
     target value at the (i,j)th coordinate of the kth data set.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     Nothing! 

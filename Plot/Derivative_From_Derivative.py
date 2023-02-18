@@ -29,8 +29,8 @@ def Derivative_From_Derivative(
     vector is >= (element-wise ) and Db's. If this is the case, then we can
     compute Da U from Db U, which is precisely what this function does. To see
     how, suppose that Da.Encoding = [p_1, ... , p_n], and Db.Encoding = [q_1,
-    ... , q_n] where each p_k >= q_k. Further, let x(k) denote the kth variable.
-    In this case,
+    ... , q_n] where each p_k >= q_k. Further, let x(k) denote the kth 
+    variable. In this case,
             Da U = D_{x(1)}^{r(1)} ... D_{x(n)}^{r(n)} Db U
     This allows us to calculate Da U without having to re-do all the
     computations needed to compute Db U.
@@ -41,7 +41,7 @@ def Derivative_From_Derivative(
     requires grad set to true (and, in particular, had this set to true you
     computed Db_U)
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     Da : A derivative operator. This function computes Da U at Coords.
@@ -57,12 +57,12 @@ def Derivative_From_Derivative(
     want to evaluate Da U. The ith entry of Db_U should hold the value of Db U
     at the ith coordinate. This function computes Da U at the coordinates.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
-    This returns a 1D Tensor. If Coords has B rows, then the returned tensor has
-    B elements. The ith component of the returned Tensor holds Da U evaluated
-    at the ith coordinate (ith row of Coords). 
+    This returns a 1D Tensor. If Coords has B rows, then the returned tensor 
+    has B elements. The ith component of the returned Tensor holds Da U 
+    evaluated at the ith coordinate (ith row of Coords). 
     """
 
     # First, make sure that Db is a child of Da.

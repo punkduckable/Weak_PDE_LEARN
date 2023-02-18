@@ -25,15 +25,15 @@ def Parse_Trial_Function(Buffer : str):
     """ 
     This function reads a Trial Function from the string "Buffer".
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     Buffer: This should be a string that contains a representation of the
     Library term we want to read. In general, this will be of the form
         S_1(U)*S_2(U)*...*S_K(U)
-    Currently, we require each S_i(U) to be either 1, U, or U^p, for some p > 1.
-    We may weaken this constraint in the future. There should be no whitespace
-    in this expression. 
+    Currently, we require each S_i(U) to be either 1, U, or U^p, for some 
+    p > 1. We may weaken this constraint in the future. There should be no 
+    whitespace in this expression. 
     """
 
     Power : int = 0;
@@ -62,11 +62,12 @@ def Parse_Trial_Function(Buffer : str):
 def Parse_Library_Term(Buffer : str) -> Library_Term:
     """ 
     This function parses a library term from a line of the Library file.
-    The "Buffer" argument should be a stripped line of Library.txt that contains
-    a library term. In general, Read_Library_Term is the only function that
-    should call this one. We read the library term within, and then process it.
+    The "Buffer" argument should be a stripped line of Library.txt that 
+    contains a library term. In general, Read_Library_Term is the only function 
+    that should call this one. We read the library term within, and then 
+    process it.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     Buffer: A stripped line containing a library term (derivative + trial
@@ -182,13 +183,14 @@ def Read_Library(File_Path : str) -> Tuple[Library_Term, List[Library_Term]]:
     """ 
     This function reads the Library terms in Library.txt.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     File_Path: This is the name (relative to the working director of the file
     that houses the main function that called this one, and with a .txt
-    extension of the library file). Thus, if we run this from Code/main.txt, and
-    the Library function is Library.txt, then File_Path should be ../Library.txt
+    extension of the library file). Thus, if we run this from Code/main.txt, 
+    and the Library function is Library.txt, then File_Path should be 
+    ../Library.txt
     """
 
     # First, open the file.

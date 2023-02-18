@@ -6,7 +6,7 @@ class Trial_Function():
     """ 
     Objects of this class hold an abstract representation of a trial.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Members:
 
     Power: Currently, trial functions are restricted to the form U^p, for some
@@ -19,7 +19,7 @@ class Trial_Function():
         """ 
         Initializer:
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Arguments:
 
         Power: See class docstring. 

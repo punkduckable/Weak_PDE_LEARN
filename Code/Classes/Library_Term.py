@@ -26,7 +26,7 @@ class Library_Term():
         """ 
         Initializer.
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Arguments:
 
         Derivative, Trial_Function: See class docstring. 
@@ -82,8 +82,8 @@ class Library_Term():
 
 def Build_Library_Term_From_State(State : Dict) -> Library_Term:
     """
-    This function builds a new Library Term object from a State dictionary. It then
-    returns that object. 
+    This function builds a new Library Term object from a State dictionary. It 
+    then returns that object. 
 
     ---------------------------------------------------------------------------
     Arguments:

@@ -19,7 +19,7 @@ def Index_After_Phrase(
     """ 
     This function searches for the substring Phrase_In within Line_In.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     Line_In: A string. The program searches for the substring Phrase_In within
@@ -30,7 +30,7 @@ def Index_After_Phrase(
     Case_Sensitive: Controls if the search is case sensitive or not. (see
     Read_Line_After's docstring for more details).
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     If Phrase_In is a substring of Line_In, then this returns the index of the
@@ -96,7 +96,7 @@ def Read_Line_After(
     substring. Note that we start searching at the current position of the file
     pointer. We do not search from the start of File.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     File: The file we want to search for Phrase.
@@ -110,18 +110,18 @@ def Read_Line_After(
     a match.
 
     Case_Sensitive: Controls if the search is case sensitive or not. If
-    True, then we search for an exact match (including case) of Phrase in one of
-    File's lines. If not, then we try to find a line of File which contains the
-    same letters in the same order as Phrase.
+    True, then we search for an exact match (including case) of Phrase in one 
+    of File's lines. If not, then we try to find a line of File which contains 
+    the same letters in the same order as Phrase.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     If Phrase is a substring of a line of File, then this function returns
     everything in that line after the first occurrence of Phrase. If it can't
-    find Phrase in one of File's lines, it raises an exception. If the Phrase is
-    "cat is", and one of File's lines is "the cat is fat", then this will return
-    " fat". 
+    find Phrase in one of File's lines, it raises an exception. If the Phrase 
+    is "cat is", and one of File's lines is "the cat is fat", then this will 
+    return " fat". 
     """
 
     # Search the lines of File for one that contains Phrase as a substring.
@@ -163,7 +163,7 @@ def Read_Bool_Setting(File, Setting_Name : str) -> bool:
     """ 
     Reads a boolean setting from File.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     File: The file we want to read the setting from.
@@ -171,7 +171,7 @@ def Read_Bool_Setting(File, Setting_Name : str) -> bool:
     Setting_Name: The name of the setting we're reading. We need this in case
     of an error, so that we can print the appropriate error message.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Return:
 
     The value of the boolean setting. 
@@ -199,7 +199,7 @@ def Read_List_Setting(File, Setting_Name : str) -> List[str]:
     Reads a setting whose value is a list. We return that list with each list 
     item stored as a string.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     File: The file we want to read the setting from.
@@ -207,7 +207,7 @@ def Read_List_Setting(File, Setting_Name : str) -> List[str]:
     Setting_Name: The name of the setting we're reading. We need this in case
     of an error, so that we can print the appropriate error message.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Return:
 
     A list whose ith element holds the ith element of the setting, stored as
@@ -243,7 +243,7 @@ def Read_Dict_Setting(File, Setting_Name : str) -> Dict[str, str]:
     Reads a setting whose value is a dictionary. We return a dictionary with 
     the same keys and values. 
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     File: The file we want to read the setting from.
@@ -251,7 +251,7 @@ def Read_Dict_Setting(File, Setting_Name : str) -> Dict[str, str]:
     Setting_Name: The name of the setting we're reading. We need this in case
     of an error, so that we can print the appropriate error message.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Return:
 
     A dictionary with the same keys and values as the setting dictionary. All 
@@ -300,7 +300,7 @@ def Read_Setting(File, Setting_Name : str) -> str:
     """ 
     Reads a non-boolean setting from File.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     File: The file we want to read the setting from.
@@ -308,7 +308,7 @@ def Read_Setting(File, Setting_Name : str) -> str:
     Setting_Name: The name of the setting we're reading. We need this in case
     of an error, so that we can print the appropriate error message.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Return:
 
     The value of the non-boolean setting as a string (you may need to type cast

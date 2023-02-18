@@ -30,30 +30,31 @@ def Data_Loss(
         Targets     : torch.Tensor) -> torch.Tensor:
     """ 
     This function evaluates the data loss, which is the mean square
-    error between U at the Inputs, and the Targets. To do this, we
-    first evaluate U at the data points. At each point (t, x), we then
-    evaluate |U(t, x) - U'_{t, x}|^2, where U'_{t,x} is the data point
-    corresponding to (t, x). We sum up these values and then divide by the
-    number of data points.
+    error between U's predictions at the Inputs, and the Targets. To do this,
+    we first evaluate U at the Inputs. At each input, (t, x), we then evaluate 
+    |U(t, x) - U'_{t, x}|^2, where U'_{t,x} is the target value corresponding 
+    to the input (t, x). We sum up these values and then divide by the number 
+    of data points.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     U: The neural network which approximates the system response function.
 
-    Inputs: If U is a function of one spatial variable, then this should
-    be a two column tensor whose ith row holds the (t, x) coordinate of the
-    ith data point. If U is a function of two spatial variables, then this
-    should be a three column tensor whose ith row holds the (t, x, y)
-    coordinates of the ith data point.
+    Inputs: If U is a function of one spatial variable, then this should be a 
+    two column tensor whose ith row holds the (t, x) coordinate of the ith data 
+    point. If U is a function of two spatial variables, then thi should be a 
+    three column tensor whose ith row holds the (t, x, y) coordinates of the 
+    ith data point, and so on.
 
-    Targets: If Targets has N rows, then this should be an N element
-    tensor whose ith element holds the value of U at the ith data point.
+    Targets: If Targets has N rows, this should be an N element tensor whose ith 
+    element holds the target value corresponding to the ith input (the value we 
+    try to make U predict at the ith input).
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
-    A scalar tensor whose sole entry holds the mean square data loss. 
+    A scalar tensor whose lone entry holds the mean square data loss. 
     """
 
     # Evaluate U at the data points.
@@ -82,39 +83,39 @@ def Weak_Form_Loss( U                   : Network,
     for any function, w, defined on Omega. Since the neural network, U, and
     vector Xi approximate the system response function and coefficient vector
     (c_1, ... , c_n), respectively, we expect that for each w,
-        \int_{\Omega} w D_0 F_k(U) dX \approx \sum_{k = 1}^{K} Xi_i \int_{\Omega} w D_i F_i(U) dX
+        \int_{\Omega} w D_0 F_k(U) dX \approx \sum_{k = 1}^{K} Xi_k \int_{\Omega} w D_k F_k(U) dX
 
-    This function calculates the left and right of the expression above for each
-    function in Weight_Functions. This gives us a system of linear equations in
-    the components of Xi. We report the mean square error of this system.
-    In particular, this function calculates (1/m)||b - A*Xi||_2^2, where
-    A \in R^{m x n} is the matrix whose i,j entry holds an approximation to the
-    integral
+    This function calculates the left and right of the expression above for 
+    each function in Weight_Functions. This gives us a system of linear 
+    equations in the components of Xi. We report the mean square error of this 
+    system. In particular, this function calculates (1/m)||b - A*Xi||_2^2, 
+    where A \in R^{m x n} is the matrix whose i,j entry holds an approximation 
+    to the integral
             \int_{\Omega} w_i(X) D_j F_j(U(X)) dX.
     That is, A_{i,j} holds the value of the integral of the jth library term
     times the ith weight function. Likewise, b \in R^m is the vector whose
     ith entry holds the value
             \int_{\Omega} w_i(X) D_0 F_k(U(X)) dX.
-    We approximate these integrals using a quadrature rule. We evaluate U at the
-    Partition_Coords (which should be the same array of coordinates we used to
-    initialize each weight function). We then use this to evaluate F_j(U) on the
-    Partition_Coords. We then use this array of values, the weight function, and
-    D_j to evaluate [A]_{i,j}.
+    We approximate these integrals using a quadrature rule. When we initialize 
+    a weight function, we give it a grid of coordinates in its support. We 
+    evaluate f_k at these coordinates and use the results, the weight function,
+    and D_j to evaluate the integral. 
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     U : The neural network which approximates the system response function.
 
     Xi : The 1D tensor of coefficients used to calculate the weak form loss 
-    (see above). If there are n RHS Terms, then Xi should have n elements.
+    (see above). If there are K RHS Terms, then Xi should have K elements.
 
-    Mask: A boolean tensor whose shape matches that of Xi. When adding the kth 
-    RHS term to the Library_Xi product, we check if Mask[k] == False. If so, 
-    We add 0*Xi[k]. Otherwise, we compute the integral of the kth library 
-    term as usual.
+    Mask : A boolean tensor whose shape matches that of Xi. When adding the kth 
+    RHS term to the Library_Xi product, we check if Mask[k] == True. If so, we
+    add 0*Xi[k]. Otherwise, we compute the integral of the kth library term as 
+    usual.
 
-    LHS_Term : The Left Hand Side library term. This is DF(U) in the PDE.
+    LHS_Term : The Left Hand Side library term. This is D_0 F_0(U) in the 
+    equation above.
 
     RHS_Terms : The Right Hand Side library terms in the PDE - These are
     D_1 F_1(U), ... , D_n F_n(U) in the PDE.
@@ -122,23 +123,24 @@ def Weak_Form_Loss( U                   : Network,
     Weight_Functions : A list containing the weight functions we want to use
     to compute the Weak Form Loss.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
     A two element tuple. The first element houses a single-element tensor whose 
     lone element holds the weak form loss. The second holds a 1D tensor whose 
-    ith entry holds the difference between the ith component of b and the 
-    ith component of A*xi. 
+    ith entry holds the difference between the left and right and side of the 
+    the integral of the PDE times the ith weight function:
+        \int_{\Omega} w_i D_0 F_0(U) dX \approx \sum_{k = 1}^{K} Xi_i \int_{\Omega} w_i D_k F_k(U) dX
     """
 
     ############################################################################
     # Construct the loss.
-    # The loss takes the form (1/m)||A \xi - b||_2^2, where b \in R^M (M = Number of
+    # The loss takes the form (1/M)||A \xi - b||_2^2, where b \in R^M (M = Number of
     # weight functions) is defined by
-    #       b_i = \int w_i(X) D_0(F_0(U(X))) dX
+    #       b_i = \int_{\Omega} w_i(X) D_0(F_0(U(X))) dX
     # where w_i is the ith weight function and D_0(F_0(U)) is the LHS term.
-    # Likewise, A \in R^{m x n} is defined by
-    #       A_{i,j} = \int w_i(X) D_j(F_j(U(X))) dX
+    # Likewise, A \in R^{M x K} (K = number or RHS terms) is defined by
+    #       A_{i,j} = \int_{\Omega} w_i(X) D_j(F_j(U(X))) dX
     # where D_j(F_j(U)) is the jth RHS term.
 
     M : int             = len(Weight_Functions);
@@ -177,7 +179,7 @@ def Lp_Loss(Xi      : torch.Tensor,
                 0                                   if Mask[k] == True
     (where delta is some small number that ensures we're not dividing by zero!)
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Arguments:
 
     Xi: The Xi vector in our setup. This should be a one-dimensional tensor.
@@ -186,26 +188,25 @@ def Lp_Loss(Xi      : torch.Tensor,
     RHS term to the Library_Xi product, we check if Mask[k] == False. If so, 
     We add 0*Xi[k]. Otherwise, we compute the kth library term as usual.
 
-    p: The "p" in in the expression above
+    p: The "p" in in the expression above.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Returns:
 
+    A single element tensor whose lone entry holds the value
         w_1*|Xi[1]|^p + w_2*|Xi[2]|^p + ... + w_N*|Xi[N]|^p
-    where N is the number of components of Xi. 
     """
 
-    assert(p > 0 and p < 2)
+    assert(p > 0 and p < 2);
 
-    # First, square the components of Xi. Also, make a double precision copy of
-    # Xi that is detached from Xi's graph.
-    delta : float = .0000001;
-    Xi_2          = torch.mul(Xi, Xi);
-    Xi_Detach     = torch.detach(Xi);
+    # First, square the components of Xi. Also, copy of Xi that is detached 
+    # from Xi's graph.
+    delta       : float         = .0000001;
+    Xi_2        : torch.Tensor  = torch.mul(Xi, Xi);
 
     # Now, define a weights tensor.
-    W               = torch.empty_like(Xi_Detach);
-    N : int         = W.numel();
+    W           : torch.Tensor  = torch.empty_like(Xi, requires_grad = False);
+    N           : int           = W.numel();
     for k in range(N):
         if(Mask[k] == True):
             W[k] = 0.0;
@@ -215,7 +216,7 @@ def Lp_Loss(Xi      : torch.Tensor,
         Abs_Xi_k    : float = abs(Xi[k].item());
 
         # Now, evaluate W[k].
-        W_k  = 1./max(delta, Abs_Xi_k**(2 - p));
+        W_k         : float = 1./max(delta, Abs_Xi_k**(2 - p));
 
         # Check for infinity (which can happen, unfortunately, if delta is too
         # small). If so, remedy it.
@@ -238,7 +239,7 @@ def L2_Squared_Loss(U : Network) -> torch.Tensor:
     that U has P \in \mathbb{N} parameters (weights, biases, RNN coefficients). 
     Suppose we enumerate those parameters and let \Theta \in \mathbb{R}^P be 
     a vector whose ith element is the ith parameter in the enumeration. This 
-    function returns ||U||_2^2.
+    function returns ||\Theta||_2^2.
 
     ---------------------------------------------------------------------------
     Arguments:

@@ -62,16 +62,16 @@ def Integrate_PDE(  w               : Weight_Function,
 	that the composite trapezoidal rule approximation to the integral is given 
 	by
 			(-1)^{|D|} V*( \sum_{i = 1}^{N} D w(X_i) F(U(X_i)) )
-	(in the trapezoidal rule in R^n, gird points along the boundary are weighted
-	differently from those inside the boundary. However, the integrand is zero
-	along the boundary points, we can safely ignore those differences and
-	pretend that all points are weighted evenly; the points in the summation
-	above with the wrong weighting evaluate to zero anyway, so the incorrect
-	weighting is moot). The weight function stores the coordinates, X_1, ... , 
-	X_N as well as the volume V. 
+	(in the trapezoidal rule in R^n, gird points along the boundary are 
+	weighted differently from those inside the boundary. However, the integrand 
+	is zero along the boundary points, we can safely ignore those differences 
+	and pretend that all points are weighted evenly; the points in the 
+	summation above with the wrong weighting evaluate to zero anyway, so the 
+	incorrect weighting is moot). The weight function stores the coordinates, 
+	X_1, ... , X_N as well as the volume V. 
 
 	This function evaluates the above quantity for each library term. 
-	----------------------------------------------------------------------------
+	---------------------------------------------------------------------------
 	Arguments:
 
 	w : This is a weight function. We assume that the user has already

@@ -8,20 +8,21 @@ class Derivative():
     Objects of this class house an abstract representation of a partial 
     derivative operator.
 
-    ----------------------------------------------------------------------------
+    ---------------------------------------------------------------------------
     Members:
 
     Encoding : A 1D numpy array of integers characterizing the partial
-    derivative operator. If there are n spatial variables, then this should be a
-    n + 1 element array, whose 0 element holds the number of time derivatives,
-    and whose ith element (for i > 0) holds the derivative order with respect to
-    the i-1th spatial variable. Currently, we only support n = 1, 2, 3.
+    derivative operator. If there are n spatial variables, then this should be 
+    a n + 1 element array, whose 0 element holds the number of time 
+    derivatives, and whose ith element (for i > 0) holds the derivative order 
+    with respect to the i-1th spatial variable. Currently, we only support 
+    n = 1, 2, 3.
 
     Order : This is the sum of the elements of Encoding. It represents the
     total number of partial derivatives we must take to apply a derivative
-    operator to a function. We need this when computing the integral of a weight
-    function times a library term (we apply integration by parts once for each
-    partial derivative in the Derivative operator). 
+    operator to a function. We need this when computing the integral of a 
+    weight function times a library term (we apply integration by parts once 
+    for each partial derivative in the Derivative operator). 
     """
 
 
@@ -30,10 +31,10 @@ class Derivative():
         """ 
         Initializer.
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Arguments:
 
-        Encoding: See class docstring. 
+        Encoding: See class doc-string. 
         """
 
         # First, cast to integer array. This also returns a copy of Encoding.
@@ -109,13 +110,13 @@ class Derivative():
         k > l. This is equivalent to saying that there is a derivative operator
         D_3 such that D_2 U = D_3 D_1 U.
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Arguments:
 
         D : A derivative operator. This function determines if self is a child
         of D.
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Returns:
 
         A boolean; True if self is a child of D, False otherwise. 
@@ -139,7 +140,7 @@ class Derivative():
 
         # If we make it here, then self is a child of D.
         return True;
-        
+
 
 
     def Get_State(self) -> Dict:
