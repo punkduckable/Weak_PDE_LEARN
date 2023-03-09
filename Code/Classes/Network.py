@@ -29,16 +29,17 @@ class Rational(torch.nn.Module):
         self.b.requires_grad_(True);
 
 
+
     def forward(self, X : torch.tensor):
         """ 
         This function applies a rational function to each element of X.
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Arguments:
 
         X: A tensor. We apply the rational function to every element of X.
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Returns:
 
         Let N(x) = sum_{i = 0}^{3} a_i x^i and D(x) = sum_{i = 0}^{2} b_i x^i.
@@ -287,17 +288,17 @@ class Network(torch.nn.Module):
     def forward(self, X : torch.Tensor) -> torch.Tensor:
         """ 
         Forward method for the NN class. Note that the user should NOT call
-        this function directly. Rather, they should call it through the __call__
-        method (using the NN object like a function), which is part of the
-        module class and calls forward.
+        this function directly. Rather, they should call it through the 
+        __call__ method (using the NN object like a function), which is part of 
+        the module class and calls forward.
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Arguments:
 
         X: A batch of inputs. This should be a B by Input_Dim tensor, where B
         is the batch size. The ith row of X should hold the ith input.
 
-        ------------------------------------------------------------------------
+        -----------------------------------------------------------------------
         Returns:
 
         If X is a B by Input_Dim tensor, then the output of this function is a

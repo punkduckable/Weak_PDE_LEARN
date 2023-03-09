@@ -61,10 +61,6 @@ class Weight_Function(torch.nn.Module):
 
     Input_Dim : w (see above) is defined on R^n. This is n.
 
-    Num_Coords : The number of rows in the Coords tensor passed to the
-    Initializer. We use this to reconstruct various derivatives of w (see
-    Get_Derivative).
-
     Supported_Coords : When we initialize a weight function object, we pass a
     set of coordinates. We partition the problem domain using a set of grid 
     parallel to each axis. The coordinates we pass is the resulting set of 
@@ -174,25 +170,25 @@ class Weight_Function(torch.nn.Module):
         #           { 0                                                         otherwise
 
         # First, calculate || X - X_0 ||_{infinity}.
-        XmX0                : torch.Tensor  = torch.subtract(X, self.X_0);
-        Max_XmX0            : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
+        XmX0                    : torch.Tensor  = torch.subtract(X, self.X_0);
+        Max_XmX0                : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
 
         # Determine which coordinates are in B_r(X_0).
-        Supported_Indices   : torch.Tensor  = torch.less(Max_XmX0, self.r);
+        Supported_Indices  : torch.Tensor  = torch.less(Max_XmX0, self.r);
 
         # Evaluate (X_i - X_0_i)^2 - r^2 for each component of each
         # supported coordinate.
-        XmX0                : torch.Tensor  = XmX0[Supported_Indices, :];
-        Denominators        : torch.Tensor  = torch.subtract(torch.pow(XmX0, 2.), (self.r)**2);
+        XmX0                    : torch.Tensor  = XmX0[Supported_Indices, :];
+        Denominators            : torch.Tensor  = torch.subtract(torch.pow(XmX0, 2.), (self.r)**2);
 
         # Compute w at the supported coordinates.
-        r2_XmX02_r2_5       : torch.Tensor = torch.add(torch.divide(torch.full_like(Denominators, 7.5*(self.r)**2), Denominators), 7.5);
-        Exponent            : torch.Tensor = torch.sum(r2_XmX02_r2_5, dim = 1);
-        w_X_Supported       : torch.Tensor = torch.exp(Exponent);
+        r2_XmX02_r2_5           : torch.Tensor = torch.add(torch.divide(torch.full_like(Denominators, 7.5*(self.r)**2), Denominators), 7.5);
+        Exponent                : torch.Tensor = torch.sum(r2_XmX02_r2_5, dim = 1);
+        w_X_Supported           : torch.Tensor = torch.exp(Exponent);
 
         # Calculate w at the rest of the coordinates.
-        w_X                 : torch.Tensor  = torch.zeros(X.shape[0], dtype = X.dtype);
-        w_X[Supported_Indices]              = w_X_Supported;
+        w_X                     : torch.Tensor  = torch.zeros(X.shape[0], dtype = X.dtype);
+        w_X[Supported_Indices]                  = w_X_Supported;
 
         # Return!
         return w_X;
@@ -266,6 +262,73 @@ class Weight_Function(torch.nn.Module):
 
         # All done!
         return Dw;
+
+
+
+def Build_From_Other( 
+        X_1     : torch.Tensor, 
+        r_1     : float,
+        W_0     : Weight_Function) -> Weight_Function:
+    """
+    This function builds a new weight function from an existing one. Why is 
+    this possible? Recall that a weight function, w, is defined as follows
+        w_0(X) = prod_{i = 1}^{N} exp(c/(((X_i - X_0_i)/r_0)^2 - 1) + c)
+    (if ||X - X_0||_2 < r_0, and 0 otherwise). Suppose that we have a second 
+    weight function, w_1, which has the same radius but a different center, 
+    X_1, and radius, r_1. Then, notice that
+        w_0((X - X_1)r_0/r_1 + X_0) = prod_{i = 1}^{N} exp(c/(((X_i - X_1_i)r_0/(r_0*r_1))^2 - 1) + c)
+                                    = prod_{i = 1}^{N} exp(c/(((X_i - X_1_i)/r_1)^2 - 1) + c)
+                                    = w_1(X)
+    In particular, this means that
+        (d/dx_i)w_1(X) = (r_0/r_1)(d/dx_i)w_0((X - X_1)r_0/r_1 + X_0)
+    Thus, we can easily relate the partial derivatives of w_0 to w_1. In 
+    particular, if we already know the derivatives of w_0, and we can 
+    obtain the gird points of w_1 by applying the mapping 
+        X -> (X - X_1)r_0/r_1 + X_0
+    to the grid points of w_0, then then don't need to compute the derivatives
+    of w_1 from scratch... instead, we can simply fetch those of w_1. This is 
+    precisely the approach that we take here. 
+
+    In particular, we build a new weight function, W_1, from an existing 
+    weight function, W_0. To do this, we simply apply the mapping 
+        X -> (X - X_1)r_0/r_1 + X_0
+    to the grid points in W_0. We then copy the derivatives of W_0 to 
+    those in W_1 by multiplying the ith derivative of W_0 by (r_0/r_1)^k(i), 
+    where k(i) is the order of the ith derivative.
+    """
+
+    # First, fetch the relevant parameters from W_0.
+    X_0         : torch.Tensor  = W_0.X_0;
+    r_0         : float         = W_0.r;
+    W_0_Coords  : torch.Tensor  = W_0.Supported_Coords;
+    V_0         : float         = W_0.V;
+
+    # Fetch the number of dimensions. We need this to adjust V.
+    n           : int           = W_0_Coords.shape[1];
+    
+    # Build new variables. 
+    W_1_Coords  : torch.Tensor  = (W_0_Coords - X_1)*(r_0/r_1) + X_0;
+    V_1         : float         = V_0*((r_1/r_0)**n);
+
+    # Initialize W_1
+    W_1 = Weight_Function(X_0 = X_1, r = r_1, Coords = W_1_Coords, V = V_1);
+
+    # Now, build the derivatives of W_1 from those of W_0. 
+    W_0_Derivatives_Dict = W_0.Derivatives;
+    for Encoding, W_0_Derivative in W_0_Derivatives_Dict.items():
+        # First, determine the order of this derivative.
+        Order : int = 0;
+        for i in range(len(Encoding)):
+            Order += Encoding[i];
+        
+        # Next, scale W_0_Derivative by (r_0/r_1)^Order to get the  
+        # corresponding derivatives for W_1. This works because of how we 
+        # define the coordinates of W_1. 
+        W_1_Derivative : torch.Tensor = W_0_Derivative*((r_0/r_1)**Order);
+        W_1.Derivatives[Encoding] = W_1_Derivative;
+    
+    # All done!
+    return W_1;
 
 
 

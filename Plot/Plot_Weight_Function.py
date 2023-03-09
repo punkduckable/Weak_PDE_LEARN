@@ -21,7 +21,7 @@ import matplotlib.pyplot as pyplot;
 
 # Code files.
 from Derivative             import Derivative;
-from Weight_Function        import Weight_Function;
+from Weight_Function        import Weight_Function, Build_From_Other;
 
 
 
@@ -68,19 +68,23 @@ def Plot_Bump(  w       : Weight_Function,
 
 
 
-def Plot_Bump_Derivative(   w           : Weight_Function,
-                            D           : Derivative,
-                            Dim_0       : int,
-                            Dim_1       : int,
-                            m           : int,
-                            Coords      : torch.Tensor) -> None:
+def Plot_Bump_Derivative(   w                   : Weight_Function,
+                            D                   : Derivative,
+                            Dim_0               : int,
+                            Dim_1               : int,
+                            m                   : int,
+                            Coords              : torch.Tensor, 
+                            Supported_Indices   : torch.Tensor) -> None:
     # First, get the center and radius of w.
     Center : torch.Tensor   = w.X_0;
     Radius : float          = w.r;
 
     # Evaluate Derivative of w at the coords.
-    w.Add_Derivative(D = D);
-    D_w : numpy.ndarray = w.Get_Derivative(D = D).detach().numpy();
+    D_w_Supported   : numpy.ndarray = w.Derivatives[tuple(D.Encoding)].detach().numpy();
+    Num_Coords      : int           = Coords.shape[0];
+
+    D_w             : torch.Tensor  = numpy.zeros(Num_Coords, dtype = numpy.float32);
+    D_w[Supported_Indices]          = D_w_Supported;
 
     # Set up plotting coordinates.
     grid_Dim0_Coords : numpy.ndarray = Coords[:, Dim_0].reshape(m, m);
@@ -145,6 +149,10 @@ def main():
             Coords[m*i + j, Dim_0] = Dim0_Pts[i];
             Coords[m*i + j, Dim_1] = Dim1_Pts[j];
 
+    # Find the volume for the ith data set (and report).
+    V : float = (b - a)*(d - c)/(m*m);
+
+    
 
     ############################################################################
     # Initialize Derivative operator.
@@ -155,17 +163,34 @@ def main():
     ############################################################################
     # Initialize weight function
 
-    w : Weight_Function = Weight_Function(  X_0     = Center,
+    W_0 : Weight_Function = Weight_Function(X_0     = Center,
                                             r       = Radius,
-                                            Powers  = torch.from_numpy(D.Encoding + 1),
-                                            Coords  = Coords);
+                                            Coords  = Coords, 
+                                            V       = V);
+    
+    # Find set of supported coordinates. 
+    XmX0                        : torch.Tensor  = torch.subtract(Coords, Center);
+    Max_XmX0                    : torch.Tensor  = torch.linalg.vector_norm(XmX0, ord = float('inf'), dim = 1);
+    Supported_Indices           : torch.Tensor  = torch.less(Max_XmX0, Radius);
+
+    # Now add the derivative
+    W_0.Add_Derivative(D = D);
+
+    # Now build a second bump from the first. 
+    W_1 = Build_From_Other(
+                X_1 = torch.tensor([Radius, Radius], dtype = torch.float32), 
+                r_1 = Radius*2, 
+                W_0 = W_0);
 
 
     ############################################################################
     # Plot!!!
 
-    Plot_Bump(              w,      Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords);
-    Plot_Bump_Derivative(   w,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords);
+    Plot_Bump(              W_0,      Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords);
+    Plot_Bump_Derivative(   W_0,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords, Supported_Indices = Supported_Indices);
+
+    Plot_Bump(              W_1,      Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords);
+    Plot_Bump_Derivative(   W_1,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords, Supported_Indices = Supported_Indices);
 
 
 
