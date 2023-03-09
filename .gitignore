@@ -1,2 +1,7 @@
 /Saves/*
 /Data/DataSets/*
+/Figures/*
+
+*.DS_Store
+*__pycache__*
+

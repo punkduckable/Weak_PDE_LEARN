@@ -14,13 +14,14 @@ sys.path.append(Classes_Path);
 import  numpy;
 import  torch;
 import  time;
+import  random;
 from    typing              import Dict, List;
 
 from    Settings_Reader     import Settings_Reader;
 from    Library_Reader      import Read_Library;
 
 from    Network             import Network;
-from    Weight_Function     import Weight_Function;
+from    Weight_Function     import Weight_Function, Build_From_Other;
 from    Library_Term        import Library_Term, Build_Library_Term_From_State;
 
 from    Data                import Data_Loader;
@@ -248,83 +249,88 @@ def main():
 
     print("Reminder: Replace the \"Setup Weight Functions\" code with something better...\n");
 
-    Weight_Functions_List : List[List[Weight_Function]] = [];
+    Master_Weight_Functions         : List[Weight_Function]         = [];
+    Random_Weight_Functions_Lists   : List[List[Weight_Function]]   = [];
     for i in range(Num_DataSets):
         # Get the bounds for the ith data set
         ith_Bounds      : numpy.ndarray = Data_Dict["Input Bounds"][i];
         ith_Partition   : torch.tensor  = Setup_Partition(  Axis_Partition_Size = Settings["Axis Partition Size"],
                                                             Bounds              = ith_Bounds);
 
-        # Set up the volume for the ith data set (and report).
+        # Find the center of the ith data set. 
+        ith_Center      : torch.Tensor  = torch.empty(Num_Dimensions, dtype = torch.float32);
+        for j in range(Num_Dimensions):
+            ith_Center[j] = (ith_Bounds[j, 0] + ith_Bounds[j, 1])/2;
+        
+        # Set up the volume for the ith data set.
         ith_V : float = 1;
         for j in range(Num_Dimensions):
             ith_V *= (ith_Bounds[j, 1] - ith_Bounds[j, 0])/float(Settings["Axis Partition Size"]);
         
         # Report problem domain, sub-rectangle volume.
         print("Problem domain %d:" % i); 
+        
         print("\tBounds               - ", end = '');
-
         for j in range(Num_Dimensions):
             print("[%g, %g]" % (Data_Dict["Input Bounds"][i][j][0], Data_Dict["Input Bounds"][i][j][1]), end = '');
             if(j != Num_Dimensions - 1):
                 print(" x ", end = '');
             else:
                 print();
+        
+        print("\tCenter               - [", end = '');
+        for j in range(Num_Dimensions - 1):
+            print("%f, " % ith_Center[j], end = '');
+        print("%f]" % ith_Center[-1]);
+
         print("\tSub-rectangle volume - %f" % ith_V);
 
-        # Set up weight functions for the ith data set.
+        # Determine the shortest side length of the ith problem domain.
         ith_Min_Side_Length : float = ith_Bounds[0, 1] - ith_Bounds[0, 0];
-
         for i in range(1, Num_Dimensions):
             if(ith_Bounds[i, 1] - ith_Bounds[i, 0] < ith_Min_Side_Length):
                 ith_Min_Side_Length = ith_Bounds[i, 1] - ith_Bounds[i, 0];
 
-        # Set up radius.... Maybe make this better?
-        ith_Radius  : float = ith_Min_Side_Length*(.4);
+        # Set up the radius for the ith master weight function
+        ith_Radius      : float             = .5*ith_Min_Side_Length;
 
-        # Set up weight function centers.
+        # Now... initialize the ith Master Weight Function
+        W_i             : Weight_Function   = Weight_Function(
+                                                X_0     = ith_Center, 
+                                                r       = ith_Radius, 
+                                                Coords  = ith_Partition, 
+                                                V       = ith_V);
+        Master_Weight_Functions.append(W_i);
+
+        # Now, add the derivatives to the ith master weight function. 
+        W_i.Add_Derivative(Settings["LHS Term"].Derivative);
+        for k in range(Num_RHS_Terms):
+            W_i.Add_Derivative(Settings["RHS Terms"][k].Derivative);
+        
+        # Finally, set up the random weight functions for the ith problem domain.
         # If the problem domain is [a_1, b_1] x ... x [a_n, b_n], then we place the
         # centers in [a_1 + r + e, b_1 - r - e] x ... x [a_n - r + e, b_n - r - e],
         # where e = Epsilon is some small positive number (to ensure the weight
         # function support is in the domain).
-        Epsilon             : float         = 0.0005;
-        Trimmed_ith_Bounds  : numpy.ndarray = numpy.empty_like(ith_Bounds);
+        ith_Random_Weight_Functions : List[Weight_Function] = [];
+        Epsilon                     : float                 = 0.0005;
 
-        for i in range(Num_Dimensions):
-            Trimmed_ith_Bounds[i, 0] = ith_Bounds[i, 0] + ith_Radius + Epsilon;
-            Trimmed_ith_Bounds[i, 1] = ith_Bounds[i, 1] - ith_Radius - Epsilon;
-
-        # Generate Centers.
-        ith_Centers : numpy.ndarray = Generate_Points(
-                                    Bounds     = Trimmed_ith_Bounds,
-                                    Num_Points = Settings["Num Weight Functions"],
-                                    Device     = Settings["Device"]);
-
-        # Set up the weight functions for the ith data set
-        ith_Weight_Functions : List[Weight_Function] = [];
         for j in range(Settings["Num Weight Functions"]):
-            w_j = Weight_Function(
-                        X_0     = ith_Centers[j],
-                        r       = ith_Radius,
-                        Coords  = ith_Partition,
-                        V       = ith_V);
+            # Set up radius for jth weight function.
+            jth_Rand    : float         = random.uniform(.3, .5);
+            jth_Radius  : float         = jth_Rand*ith_Min_Side_Length;
 
-            ith_Weight_Functions.append(w_j);
-
-        # Compute weight function derivatives.
-        for j in range(Settings["Num Weight Functions"]):
-            w_j : Weight_Function = ith_Weight_Functions[j];
-
-            # First, add the LHS Term derivative.
-            w_j.Add_Derivative(Settings["LHS Term"].Derivative);
-
-            # Now add the derivatives from the RHS Terms.
-            for k in range(Num_RHS_Terms):
-                w_j.Add_Derivative(Settings["RHS Terms"][k].Derivative);
-
-        # Add the weight functions to the list.
-        Weight_Functions_List.append(ith_Weight_Functions);
-
+            # Set up center for jth weight function
+            jth_Center  : torch.Tensor  = torch.empty(Num_Dimensions, dtype = torch.float32);
+            for k in range(Num_Dimensions):
+                jth_Center[k] = random.uniform(
+                                        a = ith_Bounds[k, 0] + jth_Radius + Epsilon, 
+                                        b = ith_Bounds[k, 1] - ith_Radius + Epsilon);
+            ith_Random_Weight_Functions.append(Build_From_Other(X_1 = jth_Center, r_1 = jth_Radius, W_0 = W_i));
+        
+        # Add the weight functions to the list of lists.
+        Random_Weight_Functions_Lists.append(ith_Random_Weight_Functions);
+    
 
 
     ############################################################################
@@ -362,7 +368,7 @@ def main():
                                 Targets_List            = Data_Dict["Train Targets"],
                                 LHS_Term                = Settings["LHS Term"],
                                 RHS_Terms               = Settings["RHS Terms"],
-                                Weight_Functions_List   = Weight_Functions_List,
+                                Weight_Functions_List   = Random_Weight_Functions_Lists,
                                 p                       = Settings["p"],
                                 Weights                 = Settings["Weights"],
                                 Optimizer               = Optimizer,
@@ -387,7 +393,7 @@ def main():
                                 Targets_List            = Data_Dict["Test Targets"],
                                 LHS_Term                = Settings["LHS Term"],
                                 RHS_Terms               = Settings["RHS Terms"],
-                                Weight_Functions_List   = Weight_Functions_List,
+                                Weight_Functions_List   = Random_Weight_Functions_Lists,
                                 p                       = Settings["p"],
                                 Weights                 = Settings["Weights"],
                                 Device                  = Settings["Device"]);

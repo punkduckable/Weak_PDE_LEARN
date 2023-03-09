@@ -276,6 +276,10 @@ def Build_From_Other(
     (if ||X - X_0||_2 < r_0, and 0 otherwise). Suppose that we have a second 
     weight function, w_1, which has the same radius but a different center, 
     X_1, and radius, r_1. Then, notice that
+        w_1((X - X_0)r_1/r_0 + X_1) = prod_{i = 1}^{N} exp(c/(((X_i - X_0_i)(r_1/r_0)/r_1)^2 - 1) + c)
+                                    = prod_{i = 1}^{M} exp(c/(((X_i - X_0_i)/r_0)^2 - 1) + c)
+                                    = w_0(X)
+    Likewise,
         w_0((X - X_1)r_0/r_1 + X_0) = prod_{i = 1}^{N} exp(c/(((X_i - X_1_i)r_0/(r_0*r_1))^2 - 1) + c)
                                     = prod_{i = 1}^{N} exp(c/(((X_i - X_1_i)/r_1)^2 - 1) + c)
                                     = w_1(X)
@@ -307,7 +311,7 @@ def Build_From_Other(
     n           : int           = W_0_Coords.shape[1];
     
     # Build new variables. 
-    W_1_Coords  : torch.Tensor  = (W_0_Coords - X_1)*(r_0/r_1) + X_0;
+    W_1_Coords  : torch.Tensor  = (W_0_Coords - X_0)*(r_1/r_0) + X_1;
     V_1         : float         = V_0*((r_1/r_0)**n);
 
     # Initialize W_1
