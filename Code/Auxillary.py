@@ -1,6 +1,24 @@
-import numpy;
-import torch;
-import random;
+# Nonsense to add Readers, Classes directories to the Python search path.
+import os
+import sys
+
+# Get path to Code, Readers, Classes directories.
+Code_Path       = os.path.dirname(os.path.abspath(__file__));
+Readers_Path    = os.path.join(Code_Path, "Readers");
+Classes_Path    = os.path.join(Code_Path, "Classes");
+
+# Add the Readers, Classes directories to the python path.
+sys.path.append(Readers_Path);
+sys.path.append(Classes_Path);
+
+import  numpy;
+import  torch;
+import  random;
+from    typing          import List, Tuple;
+
+from    Weight_Function import Weight_Function, Build_From_Other;
+
+
 
 
 
@@ -153,3 +171,63 @@ def Setup_Partition(Axis_Partition_Size : int,
     else:
         print("Invalid number of dimensions. Must be 2, 3, or 4. Got %d" % Nd);
         exit();
+
+
+
+def Make_Random_Weight_Functions(Bounds : numpy.ndarray, W_Master : Weight_Function, Num_Weight_Functions : int) -> List[Weight_Function]:
+    """
+    This function generates a collection of weight functions inside of the 
+    rectangle defined by Bounds. We generate each weight function using 
+    W_Master. We assume that W_Master has been set up (with all necessary 
+    derivatives) on the problem domain defined by Bounds.
+
+    ---------------------------------------------------------------------------
+    Arguments:
+
+    Bounds: A N x 2 tensor, where N is the number of input dimensions. If the 
+    ith row of Bounds is [a_N, b_N] then the the problem domain is 
+            [a_1, b_1] x ... x [a_N, b_N]
+    
+    W_Master: The "MAster weight function" which we use to generate the 
+    random weight functions that we return.
+
+    Num_Weight_Functions: The number of weight functions we want to make.
+
+    ---------------------------------------------------------------------------
+    Returns:
+
+    A list whose ith element holds the ith Weight Function that we make.
+    """
+
+    # Get the number of dimensions
+    Num_Dimensions = Bounds.shape[0];
+
+    # Determine the shortest side length of the ith problem domain.
+    ith_Min_Side_Length : float = Bounds[0, 1] - Bounds[0, 0];
+    for i in range(1, Num_Dimensions):
+        if(Bounds[i, 1] - Bounds[i, 0] < ith_Min_Side_Length):
+            ith_Min_Side_Length = Bounds[i, 1] - Bounds[i, 0];
+
+    # Set up the random weight functions for the ith problem domain.
+    # If the problem domain is [a_1, b_1] x ... x [a_n, b_n], then we place the
+    # centers in [a_1 + r + e, b_1 - r - e] x ... x [a_n - r + e, b_n - r - e],
+    # where e = Epsilon is some small positive number (to ensure the weight
+    # function support is in the domain).
+    Random_Weight_Functions     : List[Weight_Function] = [];
+    Epsilon                     : float                 = 0.0005;
+
+    for j in range(Num_Weight_Functions):
+        # Set up radius for jth weight function.
+        jth_Rand    : float         = random.uniform(.3, .5);
+        jth_Radius  : float         = jth_Rand*ith_Min_Side_Length;
+
+        # Set up center for jth weight function
+        jth_Center  : torch.Tensor  = torch.empty(Num_Dimensions, dtype = torch.float32);
+        for k in range(Num_Dimensions):
+            jth_Center[k] = random.uniform(
+                                    a = Bounds[k, 0] + jth_Radius + Epsilon, 
+                                    b = Bounds[k, 1] - jth_Radius + Epsilon);
+        Random_Weight_Functions.append(Build_From_Other(X_1 = jth_Center, r_1 = jth_Radius, W_0 = W_Master));
+    
+    # Add the weight functions to the list of lists.
+    return Random_Weight_Functions;

@@ -15,7 +15,7 @@ import  numpy;
 import  torch;
 import  time;
 import  random;
-from    typing              import Dict, List;
+from    typing              import Dict, List, Tuple;
 
 from    Settings_Reader     import Settings_Reader;
 from    Library_Reader      import Read_Library;
@@ -25,7 +25,7 @@ from    Weight_Function     import Weight_Function, Build_From_Other;
 from    Library_Term        import Library_Term, Build_Library_Term_From_State;
 
 from    Data                import Data_Loader;
-from    Points              import Generate_Points, Setup_Partition;
+from    Auxillary           import Generate_Points, Setup_Partition, Make_Random_Weight_Functions;
 from    Test_Train          import Testing, Training;
 from    Plot                import Plot_Losses;
 
@@ -307,29 +307,11 @@ def main():
         for k in range(Num_RHS_Terms):
             W_i.Add_Derivative(Settings["RHS Terms"][k].Derivative);
         
-        # Finally, set up the random weight functions for the ith problem domain.
-        # If the problem domain is [a_1, b_1] x ... x [a_n, b_n], then we place the
-        # centers in [a_1 + r + e, b_1 - r - e] x ... x [a_n - r + e, b_n - r - e],
-        # where e = Epsilon is some small positive number (to ensure the weight
-        # function support is in the domain).
-        ith_Random_Weight_Functions : List[Weight_Function] = [];
-        Epsilon                     : float                 = 0.0005;
-
-        for j in range(Settings["Num Weight Functions"]):
-            # Set up radius for jth weight function.
-            jth_Rand    : float         = random.uniform(.3, .5);
-            jth_Radius  : float         = jth_Rand*ith_Min_Side_Length;
-
-            # Set up center for jth weight function
-            jth_Center  : torch.Tensor  = torch.empty(Num_Dimensions, dtype = torch.float32);
-            for k in range(Num_Dimensions):
-                jth_Center[k] = random.uniform(
-                                        a = ith_Bounds[k, 0] + jth_Radius + Epsilon, 
-                                        b = ith_Bounds[k, 1] - ith_Radius + Epsilon);
-            ith_Random_Weight_Functions.append(Build_From_Other(X_1 = jth_Center, r_1 = jth_Radius, W_0 = W_i));
-        
-        # Add the weight functions to the list of lists.
-        Random_Weight_Functions_Lists.append(ith_Random_Weight_Functions);
+        # Build random weight functions from the master
+        Random_Weight_Functions_Lists.append(Make_Random_Weight_Functions(
+                                                Bounds                  = ith_Bounds, 
+                                                W_Master                = W_i, 
+                                                Num_Weight_Functions    = Settings["Num Weight Functions"]));
     
 
 
