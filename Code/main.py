@@ -39,7 +39,7 @@ def main():
     # Load the settings, print them.
     Settings : Dict = Settings_Reader();
     for (Setting, Value) in Settings.items():
-        print("%-25s = %s" % (Setting, str(Value)));
+        print("%-27s = %s" % (Setting, str(Value)));
 
     # Start a setup timer.
     Setup_Timer : float = time.perf_counter();
@@ -245,12 +245,11 @@ def main():
 
 
     ############################################################################
-    # Set up weight functions.
+    # Set up master weight functions.
 
     print("Reminder: Replace the \"Setup Weight Functions\" code with something better...\n");
 
     Master_Weight_Functions         : List[Weight_Function]         = [];
-    Random_Weight_Functions_Lists   : List[List[Weight_Function]]   = [];
     for i in range(Num_DataSets):
         # Get the bounds for the ith data set
         ith_Bounds      : numpy.ndarray = Data_Dict["Input Bounds"][i];
@@ -306,17 +305,16 @@ def main():
         W_i.Add_Derivative(Settings["LHS Term"].Derivative);
         for k in range(Num_RHS_Terms):
             W_i.Add_Derivative(Settings["RHS Terms"][k].Derivative);
-        
-        # Build random weight functions from the master
-        Random_Weight_Functions_Lists.append(Make_Random_Weight_Functions(
-                                                Bounds                  = ith_Bounds, 
-                                                W_Master                = W_i, 
-                                                Num_Weight_Functions    = Settings["Num Weight Functions"]));
     
 
 
     ############################################################################
     # Run the Epochs!
+
+    # Set up targeted weight functions. We initialize each list to be empty.
+    Targeted_Weight_Functions_List : List[List[Weight_Function]] = [];
+    for i in range(Num_DataSets):
+        Targeted_Weight_Functions_List.append([]);
 
     # Set up buffers to hold the losses.
     Train_Losses        : List[Dict[str, numpy.ndarray]]    = [];
@@ -338,7 +336,20 @@ def main():
     # Epochs!!!
     Epoch_Timer         : float                             = time.perf_counter();
     print("\nRunning %d epochs..." % Settings["Num Epochs"]);
+
     for t in range(0, Settings["Num Epochs"]):
+        # First, generate the random weight functions 
+        Train_Weight_Functions_Lists   : List[List[Weight_Function]]   = [];
+        for i in range(Num_DataSets):
+            ith_Random_Weight_Functions = Make_Random_Weight_Functions(
+                                                    Bounds                  = Data_Dict["Input Bounds"][i], 
+                                                    W_Master                = Master_Weight_Functions[i], 
+                                                    Num_Weight_Functions    = Settings["Num Train Weight Functions"]);
+
+            Train_Weight_Functions_Lists.append(ith_Random_Weight_Functions + Targeted_Weight_Functions_List[i]);
+
+
+
         ########################################################################
         # Train
 
@@ -350,7 +361,7 @@ def main():
                                 Targets_List            = Data_Dict["Train Targets"],
                                 LHS_Term                = Settings["LHS Term"],
                                 RHS_Terms               = Settings["RHS Terms"],
-                                Weight_Functions_List   = Random_Weight_Functions_Lists,
+                                Weight_Functions_List   = Train_Weight_Functions_Lists,
                                 p                       = Settings["p"],
                                 Weights                 = Settings["Weights"],
                                 Optimizer               = Optimizer,
@@ -367,6 +378,14 @@ def main():
         ########################################################################
         # Test
 
+        # First, generate the random weight functions 
+        Test_Weight_Functions_Lists   : List[List[Weight_Function]]   = [];
+        for i in range(Num_DataSets):
+            Test_Weight_Functions_Lists.append(Make_Random_Weight_Functions(
+                                                    Bounds                  = Data_Dict["Input Bounds"][i], 
+                                                    W_Master                = Master_Weight_Functions[i], 
+                                                    Num_Weight_Functions    = Settings["Num Test Weight Functions"]));
+
         # Evaluate losses on the testing points.
         Test_Dict = Testing(    U_List                  = U_List,
                                 Xi                      = Xi,
@@ -375,7 +394,7 @@ def main():
                                 Targets_List            = Data_Dict["Test Targets"],
                                 LHS_Term                = Settings["LHS Term"],
                                 RHS_Terms               = Settings["RHS Terms"],
-                                Weight_Functions_List   = Random_Weight_Functions_Lists,
+                                Weight_Functions_List   = Test_Weight_Functions_Lists,
                                 p                       = Settings["p"],
                                 Weights                 = Settings["Weights"],
                                 Device                  = Settings["Device"]);

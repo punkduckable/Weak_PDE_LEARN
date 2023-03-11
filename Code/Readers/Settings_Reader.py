@@ -105,7 +105,9 @@ def Settings_Reader() -> Dict:
     Settings["Weights"] = Buffer;
 
     # Read the number of weight functions
-    Settings["Num Weight Functions"] = int(Read_Setting(File, "Number of Weight Functions [int]:"));
+    Settings["Num Train Weight Functions"] = int(Read_Setting(File, "Number Train Weight Functions [int]:"));
+    Settings["Num Test Weight Functions"]  = int(Read_Setting(File, "Number Test Weight Functions [int]:"));
+
 
     # Read the Axis Partition Size. Suppose the problem domain is [a_1, b_1] x
     # ... x [a_n, b_n]. If the Axis Partition size is N, then we partition each
