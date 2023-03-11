@@ -373,7 +373,26 @@ def main():
             Train_Losses[i]["Weak Losses"][t]  = Train_Dict["Weak Losses"][i];
             Train_Losses[i]["Total Losses"][t] = Train_Dict["Total Losses"][i];
 
+        # Set up targeted weight functions for the next epoch.
+        Residual_Cutoffs : List[float] = [];
+        for i in range(Num_DataSets):
+            # Determine the cutoff. We wil target any weight function with a 
+            # residual above this level.
+            Abs_Residual    : torch.Tensor  = torch.abs( Train_Dict["Residuals"][i]);
 
+            ith_Mean        : float         = torch.mean(Abs_Residual).item();
+            ith_SD          : float         = torch.std( Abs_Residual).item();
+
+            Residual_Cutoff : float         = ith_Mean + 3*ith_SD;
+            Residual_Cutoffs.append(ith_Mean + 3*ith_SD);
+
+            # Determine which weight functions have a large residual.
+            Targeted_Weight_Functions_List[i] = [];
+            for j in range(len(Train_Weight_Functions_Lists[i])):
+                if(Abs_Residual[j] >= Residual_Cutoff):
+                    Targeted_Weight_Functions_List[i].append(Train_Weight_Functions_Lists[i][j]);
+         
+        
 
         ########################################################################
         # Test
@@ -427,7 +446,10 @@ def main():
                     print("            |       \t Lp      = %.7f\t L2[%u]   = %.7f" % (Test_Dict["Lp Loss"], i, Test_Dict["L2 Losses"][i]));
                 print("            |");                
         else:
-            print("Epoch #%-4d |" % (t + 1));
+            print("Epoch #%-4d | \t" % (t + 1), end = '');
+            for i in range(Num_DataSets):
+                print("Targ[%u] = %3d, Cutoff[%u] = %8.6f" % (i, len(Targeted_Weight_Functions_List[i]), i, Residual_Cutoffs[i]), end = '');
+            print();
 
     # Finally, replaced the final masked components of Xi with their 
     # pre-training values.  Why do we do this? It's complicated.... Some
