@@ -147,7 +147,7 @@ def Integrate_PDE(  w               : Weight_Function,
 	Sum_0           : torch.Tensor  = torch.sum(torch.multiply(F_0_U_Coords, D_0_w_Coords));
 
 	# Finally, multiply Sum by (-1)^{|D_0|}V, yielding the integral approximation
-	LHS_Integral    : torch.Tensor  = torch.multiply(Sum_0, V*((-1.)**D_0.Order));
+	LHS_Integral    : torch.Tensor  = (V*((-1.)**D_0.Order))*Sum_0;
 
 
 	############################################################################
@@ -157,6 +157,7 @@ def Integrate_PDE(  w               : Weight_Function,
 	for k in range(Num_RHS_Terms):
 		if(Mask[k] == True):
 			RHS_Integrals.append(torch.sum(torch.zeros(1, dtype = torch.float32)));
+			continue;
 
 		F_k_U_Coords    : torch.Tensor  = U_Coords_Powers[RHS_Terms[k].Trial_Function.Power];
 		D_k             : Derivative    = RHS_Terms[k].Derivative;
@@ -169,7 +170,7 @@ def Integrate_PDE(  w               : Weight_Function,
 		Sum_k           : torch.Tensor  = torch.sum(torch.multiply(F_k_U_Coords, D_k_w_Coords));
 
 		# Finally, multiply Sum by (-1)^{|D_k|}V, yielding the integral approximation
-		RHS_Integrals.append(torch.multiply(Sum_k, V*((-1.)**D_k.Order)));  
+		RHS_Integrals.append((V*((-1.)**D_k.Order))*Sum_k);  
 
 
 	# All done!

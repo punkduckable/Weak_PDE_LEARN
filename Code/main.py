@@ -31,7 +31,7 @@ from    Plot                import Plot_Losses;
 
 
 
-Threshold : float = 0.0005;
+Threshold : float = 0.001;
 
 
 
@@ -196,7 +196,7 @@ def main():
     print("    RHS Terms (%3u total): " % Num_RHS_Terms, end = '');
     for i in range(Num_RHS_Terms):
         print(str(Settings["RHS Terms"][i]), end = '');
-        
+
         if(i != Num_RHS_Terms - 1):
             print(", ", end = '');
         else:
@@ -246,8 +246,6 @@ def main():
 
     ############################################################################
     # Set up master weight functions.
-
-    print("Reminder: Replace the \"Setup Weight Functions\" code with something better...\n");
 
     Master_Weight_Functions         : List[Weight_Function]         = [];
     for i in range(Num_DataSets):
@@ -305,7 +303,7 @@ def main():
         W_i.Add_Derivative(Settings["LHS Term"].Derivative);
         for k in range(Num_RHS_Terms):
             W_i.Add_Derivative(Settings["RHS Terms"][k].Derivative);
-    
+
 
 
     ############################################################################
@@ -338,6 +336,9 @@ def main():
     print("\nRunning %d epochs..." % Settings["Num Epochs"]);
 
     for t in range(0, Settings["Num Epochs"]):
+        ########################################################################
+        # Train
+
         # First, generate the random weight functions 
         Train_Weight_Functions_Lists   : List[List[Weight_Function]]   = [];
         for i in range(Num_DataSets):
@@ -347,12 +348,7 @@ def main():
                                                     Num_Weight_Functions    = Settings["Num Train Weight Functions"]);
 
             Train_Weight_Functions_Lists.append(ith_Random_Weight_Functions + Targeted_Weight_Functions_List[i]);
-
-
-
-        ########################################################################
-        # Train
-
+        
         # Run one epoch of training. 
         Train_Dict = Training(  U_List                  = U_List,
                                 Xi                      = Xi,
@@ -383,15 +379,13 @@ def main():
             ith_Mean        : float         = torch.mean(Abs_Residual).item();
             ith_SD          : float         = torch.std( Abs_Residual).item();
 
-            Residual_Cutoff : float         = ith_Mean + 3*ith_SD;
             Residual_Cutoffs.append(ith_Mean + 3*ith_SD);
 
             # Determine which weight functions have a large residual.
             Targeted_Weight_Functions_List[i] = [];
             for j in range(len(Train_Weight_Functions_Lists[i])):
-                if(Abs_Residual[j] >= Residual_Cutoff):
+                if(Abs_Residual[j] >= Residual_Cutoffs[i]):
                     Targeted_Weight_Functions_List[i].append(Train_Weight_Functions_Lists[i][j]);
-         
         
 
         ########################################################################
@@ -439,7 +433,7 @@ def main():
             for i in range(Num_DataSets):
                 print("            |");
                 print("            | Train:\t Data[%u] = %.7f\t Weak[%u] = %.7f\t Total[%u] = %.7f" % (i, Train_Dict["Data Losses"][i], i, Train_Dict["Weak Losses"][i], i, Train_Dict["Total Losses"][i]));
-                print("            | Test: \t Data[%u] = %.7f\t Weak[%u] = %.7f\t Total[%u] = %.7f" % (i, Test_Dict["Data Losses"][i], i, Test_Dict["Weak Losses"][i], i, Test_Dict["Total Losses"][i]));
+                print("            | Test: \t Data[%u] = %.7f\t Weak[%u] = %.7f\t Total[%u] = %.7f" % (i, Test_Dict["Data Losses"][i], i,  Test_Dict["Weak Losses"][i], i,  Test_Dict["Total Losses"][i]));
                 if(i == 0):
                     print("Epoch #%-4d |       \t Lp      = %.7f\t L2[%u]   = %.7f" % (t + 1, Test_Dict["Lp Loss"], i, Test_Dict["L2 Losses"][i]));
                 else: 

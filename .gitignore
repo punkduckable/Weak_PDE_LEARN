@@ -3,5 +3,6 @@
 /Figures/*
 
 *.DS_Store
-*__pycache__*
-
+/Code/Readers/__pycache__*
+/Code/__pycache__*
+/Code/Classes/__pycache__

@@ -157,10 +157,13 @@ def Weak_Form_Loss( U                   : Network,
                                         LHS_Term    = LHS_Term, 
                                         RHS_Terms   = RHS_Terms,
                                         Mask        = Mask);
+        
         b[m]    = wm_LHS;
         for k in range(K):
             if(Mask[k] == False):
                 A_Xi[m] += Xi[k]*wm_RHSs[k];
+            else:
+                A_Xi[m] += 0.0*Xi[k];
     
     # Compute loss! (this is (1/m)||A \xi - b ||_2^2).
     Residual : torch.Tensor = torch.subtract(b, A_Xi);

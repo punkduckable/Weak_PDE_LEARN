@@ -218,7 +218,7 @@ def Make_Random_Weight_Functions(Bounds : numpy.ndarray, W_Master : Weight_Funct
 
     for j in range(Num_Weight_Functions):
         # Set up radius for jth weight function.
-        jth_Rand    : float         = random.uniform(.3, .5);
+        jth_Rand    : float         = random.uniform(.2, .3);
         jth_Radius  : float         = jth_Rand*ith_Min_Side_Length;
 
         # Set up center for jth weight function
@@ -226,7 +226,7 @@ def Make_Random_Weight_Functions(Bounds : numpy.ndarray, W_Master : Weight_Funct
         for k in range(Num_Dimensions):
             jth_Center[k] = random.uniform(
                                     a = Bounds[k, 0] + jth_Radius + Epsilon, 
-                                    b = Bounds[k, 1] - jth_Radius + Epsilon);
+                                    b = Bounds[k, 1] - jth_Radius - Epsilon);
         Random_Weight_Functions.append(Build_From_Other(X_1 = jth_Center, r_1 = jth_Radius, W_0 = W_Master));
     
     # Add the weight functions to the list of lists.

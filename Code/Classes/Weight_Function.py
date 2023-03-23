@@ -182,7 +182,7 @@ class Weight_Function(torch.nn.Module):
         Denominators            : torch.Tensor  = torch.subtract(torch.pow(XmX0, 2.), (self.r)**2);
 
         # Compute w at the supported coordinates.
-        r2_XmX02_r2_5           : torch.Tensor = torch.add(torch.divide(torch.full_like(Denominators, 7.5*(self.r)**2), Denominators), 7.5);
+        r2_XmX02_r2_5           : torch.Tensor = torch.add(torch.divide(torch.full_like(Denominators, 5*(self.r)**2), Denominators), 5);
         Exponent                : torch.Tensor = torch.sum(r2_XmX02_r2_5, dim = 1);
         w_X_Supported           : torch.Tensor = torch.exp(Exponent);
 
