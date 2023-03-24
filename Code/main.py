@@ -309,11 +309,6 @@ def main():
     ############################################################################
     # Run the Epochs!
 
-    # Set up targeted weight functions. We initialize each list to be empty.
-    Targeted_Weight_Functions_List : List[List[Weight_Function]] = [];
-    for i in range(Num_DataSets):
-        Targeted_Weight_Functions_List.append([]);
-
     # Set up buffers to hold the losses.
     Train_Losses        : List[Dict[str, numpy.ndarray]]    = [];
     Test_Losses         : List[Dict[str, numpy.ndarray]]    = [];
@@ -331,6 +326,16 @@ def main():
 
         L2_Losses.append(numpy.ndarray(shape = Settings["Num Epochs"], dtype = numpy.float32));
 
+    # Set up weight function lists. We initialize each list to be empty.
+    Random_Weight_Functions_Lists   : List[List[Weight_Function]] = [];
+    Targeted_Weight_Functions_Lists : List[List[Weight_Function]] = [];
+    Train_Weight_Functions_Lists    : List[List[Weight_Function]] = [];
+    
+    for i in range(Num_DataSets):
+        Random_Weight_Functions_Lists.append([]);
+        Targeted_Weight_Functions_Lists.append([]);
+        Train_Weight_Functions_Lists.append([]);
+
     # Epochs!!!
     Epoch_Timer         : float                             = time.perf_counter();
     print("\nRunning %d epochs..." % Settings["Num Epochs"]);
@@ -340,14 +345,16 @@ def main():
         # Train
 
         # First, generate the random weight functions 
-        Train_Weight_Functions_Lists   : List[List[Weight_Function]]   = [];
-        for i in range(Num_DataSets):
-            ith_Random_Weight_Functions = Make_Random_Weight_Functions(
-                                                    Bounds                  = Data_Dict["Input Bounds"][i], 
-                                                    W_Master                = Master_Weight_Functions[i], 
-                                                    Num_Weight_Functions    = Settings["Num Train Weight Functions"]);
+        if(t % Settings["Epochs Between New Weight Functions"] == 0):    
+            for i in range(Num_DataSets):
+                Random_Weight_Functions_Lists[i] =  Make_Random_Weight_Functions(
+                                                        Bounds                  = Data_Dict["Input Bounds"][i], 
+                                                        W_Master                = Master_Weight_Functions[i], 
+                                                        Num_Weight_Functions    = Settings["Num Train Weight Functions"]);
 
-            Train_Weight_Functions_Lists.append(ith_Random_Weight_Functions + Targeted_Weight_Functions_List[i]);
+        # Next, combine the random and targeted weight functions.
+        for i in range(Num_DataSets):
+            Train_Weight_Functions_Lists[i] = (Random_Weight_Functions_Lists[i] + Targeted_Weight_Functions_Lists[i]);
         
         # Run one epoch of training. 
         Train_Dict = Training(  U_List                  = U_List,
@@ -382,10 +389,10 @@ def main():
             Residual_Cutoffs.append(ith_Mean + 3*ith_SD);
 
             # Determine which weight functions have a large residual.
-            Targeted_Weight_Functions_List[i] = [];
+            Targeted_Weight_Functions_Lists[i] = [];
             for j in range(len(Train_Weight_Functions_Lists[i])):
                 if(Abs_Residual[j] >= Residual_Cutoffs[i]):
-                    Targeted_Weight_Functions_List[i].append(Train_Weight_Functions_Lists[i][j]);
+                    Targeted_Weight_Functions_Lists[i].append(Train_Weight_Functions_Lists[i][j]);
         
 
         ########################################################################
@@ -442,7 +449,7 @@ def main():
         else:
             print("Epoch #%-4d | \t" % (t + 1), end = '');
             for i in range(Num_DataSets):
-                print("Targ[%u] = %3d, Cutoff[%u] = %8.6f" % (i, len(Targeted_Weight_Functions_List[i]), i, Residual_Cutoffs[i]), end = '');
+                print("Targ[%u] = %3d, Cutoff[%u] = %8.6f" % (i, len(Targeted_Weight_Functions_Lists[i]), i, Residual_Cutoffs[i]), end = '');
             print();
 
     # Finally, replaced the final masked components of Xi with their 

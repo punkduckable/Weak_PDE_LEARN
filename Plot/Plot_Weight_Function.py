@@ -157,7 +157,7 @@ def main():
     ############################################################################
     # Initialize Derivative operator.
 
-    D = Derivative(Encoding = numpy.array([0, 4], dtype = numpy.int32));
+    D = Derivative(Encoding = numpy.array([2, 2], dtype = numpy.int32));
 
 
     ############################################################################
@@ -179,8 +179,15 @@ def main():
     # Now build a second bump from the first. 
     W_1 = Build_From_Other(
                 X_1 = torch.tensor([Radius, Radius], dtype = torch.float32), 
-                r_1 = Radius*2, 
+                r_1 = Radius*1.5, 
                 W_0 = W_0);
+
+    X_0 : torch.Tensor  = W_0.X_0;
+    X_1 : torch.Tensor  = W_1.X_0;
+    r_0 : float         = W_0.r;
+    r_1 : float         = W_0.r;
+
+    W_1_Coords : torch.Tensor = (Coords - X_0)*(r_1/r_0) + X_1;
 
 
     ############################################################################
@@ -190,7 +197,7 @@ def main():
     Plot_Bump_Derivative(   W_0,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords, Supported_Indices = Supported_Indices);
 
     Plot_Bump(              W_1,      Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords);
-    Plot_Bump_Derivative(   W_1,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = Coords, Supported_Indices = Supported_Indices);
+    Plot_Bump_Derivative(   W_1,  D,  Dim_0 = Dim_0, Dim_1 = Dim_1, m = m, Coords = W_1_Coords, Supported_Indices = Supported_Indices);
 
 
 

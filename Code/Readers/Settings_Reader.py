@@ -104,10 +104,10 @@ def Settings_Reader() -> Dict:
         Buffer[key] = float(value);
     Settings["Weights"] = Buffer;
 
-    # Read the number of weight functions
-    Settings["Num Train Weight Functions"] = int(Read_Setting(File, "Number Train Weight Functions [int]:"));
-    Settings["Num Test Weight Functions"]  = int(Read_Setting(File, "Number Test Weight Functions [int]:"));
-
+    # Read the weight function settings.
+    Settings["Num Train Weight Functions"]          = int(Read_Setting(File, "Number Train Weight Functions [int]:"));
+    Settings["Num Test Weight Functions"]           = int(Read_Setting(File, "Number Test Weight Functions [int]:"));
+    Settings["Epochs Between New Weight Functions"] = int(Read_Setting(File, "Epochs between New Weight Functions [int]:"));
 
     # Read the Axis Partition Size. Suppose the problem domain is [a_1, b_1] x
     # ... x [a_n, b_n]. If the Axis Partition size is N, then we partition each

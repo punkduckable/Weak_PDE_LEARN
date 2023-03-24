@@ -26,8 +26,8 @@ Library File [str]:                              Library
 
 # Architecture of the U networks. We use the same architecture for each network.
 # You can ignore these settings if you are loading the U's from a save.
-Hidden Layer Widths [List of int]:               50, 50, 50, 50, 50
-Activation Function [Tanh, Rational, Sin]:       Rat
+Hidden Layer Widths [List of int]:               40, 40, 40, 40, 40
+Activation Function [Tanh, Rational, Sin]:       Tanh
 
 # Device settings.
 Train on CPU or GPU [GPU, CPU]:                  cpu
@@ -38,12 +38,13 @@ Train on CPU or GPU [GPU, CPU]:                  cpu
 # Loss Settings.
 
 p [float]:                                       .1
-Weights [Dict of float]:                         {"Data" : 1.0, "Weak" : 1.0, "Lp" : 0.0, "L2" : 0.000005}
+Weights [Dict of float]:                         {"Data" : 1.0, "Weak" : 1.0, "Lp" : 0.00, "L2" : 0.000005}
 
 # How many random weight functions do you want to use to create at the start 
 # of each epoch? We create a separate set for testing and training.
-Number Train Weight Functions [int]:             50
+Number Train Weight Functions [int]:             200
 Number Test Weight Functions [int]:              50
+Epochs between New Weight Functions [int]:       25
 
 # How many grid lines do you want along each axis? This defines the grid of 
 # coordinates that we use for integration.
@@ -68,4 +69,4 @@ Number of Epochs [int]:                          2000
 # Data settings.
 # You can ignore this setting if you are loading the U's from a save.
 
-DataSet Names [List of str]:                     [KS_Sine_N0_P10000]
+DataSet Names [List of str]:                     [KS_Sine_N50_P10000]
