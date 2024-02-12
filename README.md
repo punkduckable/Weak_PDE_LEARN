@@ -31,12 +31,12 @@ Say yes if conda prompts you. Once you've built the virtual environment, activat
 
 Now, let's add the packages we ned to run the `WeakPDE` code (note: the versions are optional; the versions I list are the ones I used when developing this library. If you encounter any packages errors while running the code, try re-installing the packages with the specified versions):
 
-`conda install numpy=1.26.4`
-`conda install torch=2.2.0`
-`conda install matplotlib=3.8.2`
-`conda install seaborn=0.13.2`
-`conda install scipy=1.12.0`
-`conda install pandas=2.2.0`
+`conda install numpy=1.26.4`  
+`conda install torch=2.2.0`  
+`conda install matplotlib=3.8.2`  
+`conda install seaborn=0.13.2`  
+`conda install scipy=1.12.0`  
+`conda install pandas=2.2.0`  
 
 If you can't install any of these packages using `conda`, try using `pip`. Simply replace the word `conda` with `pip`. The virtual environment is now built and you're ready to start using `weak-PDE-LEARN`! 
 
